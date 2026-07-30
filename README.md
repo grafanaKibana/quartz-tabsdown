@@ -123,6 +123,16 @@ npm install
 npm run check
 ```
 
+### Smoke-building against Quartz
+
+```bash
+npm run check:quartz
+```
+
+Clones Quartz's `v5` branch, installs this plugin into a throwaway site, builds it, and asserts on the emitted HTML — including that wikilinks, highlights, and callouts survive inside a tab, which only holds while this plugin runs before Obsidian Flavored Markdown. Quartz accepts only remote plugin sources, so this checks a pushed ref, not your working tree; pass one to test a branch (`npm run check:quartz -- 'github:grafanaKibana/quartz-tabsdown#my-branch'`).
+
+Quartz v5 has no release tag — it builds from a moving default branch — so CI runs this weekly as well as per push.
+
 ### Staying in sync with obsidian-tabsdown
 
 ```bash

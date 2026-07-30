@@ -200,6 +200,30 @@
   overflow: auto;
 }
 
+/* Below Quartz's own mobile breakpoint a side tab list takes over half the
+   content column, leaving the panel unreadable, so it moves above the panels.
+   A `one` list still scrolls rather than reflowing, matching Obsidian. */
+@media (max-width: 800px) {
+  .tabsdown--left,
+  .tabsdown--right {
+    display: flex;
+    flex-direction: column;
+    /* The grid rule's start alignment would shrink both children to their
+       content width once they are flex items in a column. */
+    align-items: stretch;
+  }
+
+  .tabsdown--left > .tabsdown__tablist,
+  .tabsdown--right > .tabsdown__tablist {
+    flex-direction: row;
+    order: 0;
+    inline-size: 100%;
+    margin-block-end: var(--tabsdown-content-spacing);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
+
 @keyframes tabsdown-panel-in {
   from {
     opacity: 0;

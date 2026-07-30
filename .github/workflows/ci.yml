@@ -19,6 +19,17 @@ jobs:
       - run: npm install
       - run: npm run check:upstream
 
+  quartz-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Quartz clones plugins from a remote, so this checks the pushed ref
+      # rather than the checkout.
+      - run: ./scripts/quartz-smoke.sh "github:${{ github.repository }}#${{ github.head_ref || github.ref_name }}"
+
   check:
     runs-on: ubuntu-latest
     steps:
