@@ -25,6 +25,8 @@ transformers: [Tabsdown()];
 
 The plugin takes no options. Each block configures itself with a `config:` marker, exactly as it does in Obsidian, and appearance comes from CSS.
 
+It declares `order: 10` so it runs **before** Obsidian Flavored Markdown. Tab bodies are parsed into the tree during this pass, and the transformers that follow then process them like any other content — that is what makes wikilinks, highlights, and callouts work inside a tab. Raising the order above OFM's silently degrades those: a wikilink inside a tab renders as a dead link and a callout as a plain blockquote.
+
 ## Syntax
 
 Start each tab with a column-zero `tab: <label>` marker. A block needs at least two non-empty, unique labels. Optional block configuration goes on a column-zero `config: <values>` line before the first tab; later position or layout values win.

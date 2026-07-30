@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
 
 import { Tabsdown } from "../src/transformer";
@@ -109,6 +110,14 @@ describe("Tabsdown transformer", () => {
 
     expect(html).toContain('<code class="language-js">');
     expect(html).not.toContain("tabsdown");
+  });
+
+  test("declares an order that runs before Obsidian Flavored Markdown", async () => {
+    const manifest = JSON.parse(await readFile("package.json", "utf8")).quartz;
+
+    // OFM defaults to 30. Running after it leaves wikilinks, highlights, and
+    // callouts unprocessed inside tab bodies, which nothing else here catches.
+    expect(manifest.defaultOrder).toBeLessThan(30);
   });
 
   test("ships its styles and client script as inline resources", () => {

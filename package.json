@@ -98,7 +98,7 @@
     "requiresInstall": true,
     "dependencies": [],
     "description": "Tabbed Markdown blocks using the Obsidian Tabsdown syntax.",
-    "defaultOrder": 60,
+    "defaultOrder": 10,
     "defaultEnabled": true
   },
   "engines": {
