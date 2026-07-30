@@ -5,8 +5,34 @@ on:
     branches: [main]
   push:
     branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
 
 jobs:
+  vendored-parser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Verify the parser still matches obsidian-tabsdown
+        run: |
+          base=https://raw.githubusercontent.com/grafanaKibana/obsidian-tabsdown/main
+          status=0
+          for pair in "src/parser.ts:src/parser.ts" "tests/parser.test.ts:test/parser.test.ts"; do
+            upstream="${pair%%:*}"
+            vendored="${pair##*:}"
+            curl -fsSL "$base/$upstream" | npx prettier --stdin-filepath "$vendored" > upstream.tmp
+            if ! diff -u upstream.tmp "$vendored"; then
+              echo "::error file=$vendored::drifted from obsidian-tabsdown $upstream — port the change or publish the parser as a package"
+              status=1
+            fi
+            rm -f upstream.tmp
+          done
+          exit $status
+
   check:
     runs-on: ubuntu-latest
     steps:
