@@ -41,24 +41,27 @@ describe("Tabsdown transformer", () => {
     expect(html).toContain("beta");
   });
 
-  test("applies block configuration over the plugin defaults", async () => {
-    const html = await render(fence(["config: left, multi", "", "tab: A", "tab: B"].join("\n")), {
-      position: "bottom",
-    });
+  test("takes position and layout from the block's config marker", async () => {
+    const html = await render(fence(["config: left, multi", "", "tab: A", "tab: B"].join("\n")));
 
     expect(html).toContain("tabsdown--left");
     expect(html).toContain("tabsdown--multi");
-    expect(html).not.toContain("tabsdown--bottom");
+    expect(html).not.toContain("tabsdown--top");
   });
 
-  test("falls back to the plugin defaults when a block has no config marker", async () => {
-    const html = await render(fence(["tab: A", "tab: B"].join("\n")), {
-      position: "right",
-      layout: "multi",
-    });
+  test("lets a later config value win over an earlier one", async () => {
+    const html = await render(
+      fence(["config: left", "config: bottom, multi", "", "tab: A", "tab: B"].join("\n")),
+    );
 
-    expect(html).toContain("tabsdown--right");
-    expect(html).toContain("tabsdown--multi");
+    expect(html).toContain("tabsdown--bottom");
+    expect(html).not.toContain("tabsdown--left");
+  });
+
+  test("falls back to top and one without a config marker", async () => {
+    const html = await render(fence(["tab: A", "tab: B"].join("\n")));
+
+    expect(html).toContain("tabsdown tabsdown--top tabsdown--one");
   });
 
   test("inlines a Lucide icon and skips an unknown name", async () => {
@@ -113,6 +116,12 @@ describe("Tabsdown transformer", () => {
 
     expect(resources?.css?.[0]).toMatchObject({ inline: true });
     expect(resources?.css?.[0]?.content).toContain(".tabsdown__tablist");
+    // The Obsidian Style Settings defaults, which site CSS overrides.
+    expect(resources?.css?.[0]?.content).toContain("--tabsdown-gap: 4px");
+    expect(resources?.css?.[0]?.content).toContain("--tabsdown-radius: 4px");
+    expect(resources?.css?.[0]?.content).toContain("--tabsdown-content-spacing: 12px");
+    expect(resources?.css?.[0]?.content).toContain("--tabsdown-animation-speed: 160ms");
+    expect(resources?.css?.[0]?.content).toContain("--tabsdown-tab-min-size: 44px");
     expect(resources?.js?.[0]).toMatchObject({
       contentType: "inline",
       loadTime: "afterDOMReady",

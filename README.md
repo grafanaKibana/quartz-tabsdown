@@ -13,9 +13,6 @@ npx quartz plugin add github:grafanaKibana/quartz-tabsdown
 plugins:
   - source: github:grafanaKibana/quartz-tabsdown
     enabled: true
-    options:
-      position: top
-      layout: one
 ```
 
 Or wire it up directly in `quartz.ts`:
@@ -23,17 +20,10 @@ Or wire it up directly in `quartz.ts`:
 ```typescript
 import { Tabsdown } from "quartz-tabsdown";
 
-transformers: [Tabsdown({ position: "top", layout: "one" })];
+transformers: [Tabsdown()];
 ```
 
-## Options
-
-| Option     | Values                           | Default | Effect                                       |
-| ---------- | -------------------------------- | ------- | -------------------------------------------- |
-| `position` | `top`, `left`, `right`, `bottom` | `top`   | Where the tab list sits.                     |
-| `layout`   | `one`, `multi`                   | `one`   | Keep labels on one scrollable line, or wrap. |
-
-Both are site-wide defaults. A block's own `config:` marker wins over them.
+The plugin takes no options. Each block configures itself with a `config:` marker, exactly as it does in Obsidian, and appearance comes from CSS.
 
 ## Syntax
 
@@ -90,7 +80,39 @@ A block that cannot be parsed renders a diagnostic with the message, the line, a
 
 ## Styling
 
-Styles are injected inline and use Quartz's own theme variables, so tabs follow the active theme. Override the `.tabsdown*` classes or the `--tabsdown-*` custom properties in your own stylesheet to change spacing, radius, or colours.
+Styles are injected inline and resolve against Quartz's own theme variables, so tabs follow the active theme in both light and dark mode.
+
+Every value that the Obsidian plugin exposes through Style Settings is a custom property here, defaulted to that control's default. Obsidian has a settings panel to move them; Quartz does not, so you set them in your own stylesheet:
+
+```css
+.tabsdown {
+  --tabsdown-gap: 8px;
+  --tabsdown-radius: 0;
+}
+```
+
+| Property                             | Default             | Obsidian Style Settings control |
+| ------------------------------------ | ------------------- | ------------------------------- |
+| `--tabsdown-gap`                     | `4px`               | Gap between tabs                |
+| `--tabsdown-radius`                  | `4px`               | Corner radius                   |
+| `--tabsdown-content-spacing`         | `12px`              | Content spacing                 |
+| `--tabsdown-animation-speed`         | `160ms`             | Animation speed                 |
+| `--tabsdown-tab-min-size`            | `44px`              | Size                            |
+| `--tabsdown-tab-padding-block`       | `0.5rem`            | Size                            |
+| `--tabsdown-tab-padding-inline`      | `0.75rem`           | Size                            |
+| `--tabsdown-accent-override`         | unset, theme accent | Accent                          |
+| `--tabsdown-tab-background`          | `var(--highlight)`  | Palette                         |
+| `--tabsdown-tab-border`              | `var(--lightgray)`  | Palette                         |
+| `--tabsdown-tab-color`               | `var(--darkgray)`   | Palette                         |
+| `--tabsdown-tab-hover-background`    | `var(--lightgray)`  | Palette                         |
+| `--tabsdown-tab-hover-border`        | `var(--gray)`       | Palette                         |
+| `--tabsdown-tab-selected-background` | accent              | Palette                         |
+| `--tabsdown-tab-selected-border`     | accent              | Palette                         |
+| `--tabsdown-tab-selected-color`      | `var(--light)`      | Palette                         |
+
+Style Settings' preset _variants_ — compact density, underline personality, secondary palette, centred and equal-width alignment — are not ported, since there is no settings UI to switch them. The properties above cover the same ground from CSS.
+
+`prefers-reduced-motion` drops the animation duration to zero, as in Obsidian.
 
 ## Development
 

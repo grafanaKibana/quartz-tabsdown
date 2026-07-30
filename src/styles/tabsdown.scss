@@ -1,20 +1,37 @@
+/* Every value here is the default of the matching Obsidian Tabsdown Style
+   Settings control, under the same custom property name, so overriding one in
+   site CSS is the Quartz equivalent of moving that slider. */
 .tabsdown {
-  --tabsdown-gap: 0.25rem;
-  --tabsdown-spacing: 0.75rem;
-  --tabsdown-radius: 5px;
+  --tabsdown-gap: 4px;
+  --tabsdown-radius: 4px;
+  --tabsdown-content-spacing: 12px;
+  --tabsdown-animation-speed: 160ms;
   --tabsdown-tab-min-size: 44px;
-  --tabsdown-duration: 160ms;
+  --tabsdown-tab-padding-block: 0.5rem;
+  --tabsdown-tab-padding-inline: 0.75rem;
+
+  --tabsdown-accent: var(--tabsdown-accent-override, var(--secondary));
+  --tabsdown-tab-background: var(--highlight);
+  --tabsdown-tab-border: var(--lightgray);
+  --tabsdown-tab-color: var(--darkgray);
+  --tabsdown-tab-hover-background: var(--lightgray);
+  --tabsdown-tab-hover-border: var(--gray);
+  --tabsdown-tab-selected-background: var(--tabsdown-accent);
+  --tabsdown-tab-selected-border: var(--tabsdown-accent);
+  --tabsdown-tab-selected-color: var(--light);
+  --tabsdown-tab-underline-color: var(--tabsdown-accent);
+  --tabsdown-animation-duration: var(--tabsdown-animation-speed);
 
   box-sizing: border-box;
   max-inline-size: 100%;
   min-inline-size: 0;
-  color: var(--darkgray);
+  color: var(--tabsdown-tab-color);
 }
 
 .tabsdown .tabsdown {
-  margin-block: var(--tabsdown-spacing);
-  padding: var(--tabsdown-spacing);
-  border: 1px solid var(--lightgray);
+  margin-block: var(--tabsdown-content-spacing);
+  padding: var(--tabsdown-content-spacing);
+  border: 1px solid var(--tabsdown-tab-border);
   border-radius: var(--tabsdown-radius);
 }
 
@@ -26,7 +43,7 @@
   inline-size: 100%;
   max-inline-size: 100%;
   min-inline-size: 0;
-  margin-block-end: var(--tabsdown-spacing);
+  margin-block-end: var(--tabsdown-content-spacing);
   gap: var(--tabsdown-gap);
   overflow-x: auto;
   overflow-y: hidden;
@@ -46,7 +63,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  gap: var(--tabsdown-spacing);
+  gap: var(--tabsdown-content-spacing);
 }
 
 .tabsdown--right {
@@ -73,7 +90,7 @@
 
 .tabsdown--bottom > .tabsdown__tablist {
   order: 1;
-  margin-block: var(--tabsdown-spacing) 0;
+  margin-block: var(--tabsdown-content-spacing) 0;
 }
 
 .tabsdown__tab {
@@ -81,11 +98,11 @@
   box-sizing: border-box;
   min-inline-size: var(--tabsdown-tab-min-size);
   min-block-size: var(--tabsdown-tab-min-size);
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--lightgray);
+  padding: var(--tabsdown-tab-padding-block) var(--tabsdown-tab-padding-inline);
+  border: 1px solid var(--tabsdown-tab-border);
   border-radius: var(--tabsdown-radius);
-  background-color: var(--light);
-  color: var(--darkgray);
+  background-color: var(--tabsdown-tab-background);
+  color: var(--tabsdown-tab-color);
   font-family: var(--bodyFont);
   font-size: 0.9rem;
   font-weight: 500;
@@ -93,21 +110,21 @@
   text-align: center;
   cursor: pointer;
   transition:
-    background-color var(--tabsdown-duration) ease,
-    border-color var(--tabsdown-duration) ease,
-    color var(--tabsdown-duration) ease;
+    background-color var(--tabsdown-animation-duration) ease,
+    border-color var(--tabsdown-animation-duration) ease,
+    color var(--tabsdown-animation-duration) ease;
 }
 
 .tabsdown__tab:hover {
-  border-color: var(--gray);
-  background-color: var(--lightgray);
+  border-color: var(--tabsdown-tab-hover-border);
+  background-color: var(--tabsdown-tab-hover-background);
 }
 
 .tabsdown__tab[aria-selected="true"],
 .tabsdown__tab[aria-selected="true"]:hover {
-  border-color: var(--secondary);
-  background-color: var(--secondary);
-  color: var(--light);
+  border-color: var(--tabsdown-tab-selected-border);
+  background-color: var(--tabsdown-tab-selected-background);
+  color: var(--tabsdown-tab-selected-color);
 }
 
 .tabsdown__tab-icon {
@@ -137,7 +154,7 @@
 }
 
 .tabsdown__panel:not([hidden]) {
-  animation: tabsdown-panel-in var(--tabsdown-duration) ease;
+  animation: tabsdown-panel-in var(--tabsdown-animation-duration) ease;
 }
 
 /* Without the client script no tab can be activated, so the tab list is dead
@@ -161,9 +178,9 @@
   box-sizing: border-box;
   max-inline-size: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--lightgray);
+  border: 1px solid var(--tabsdown-tab-border);
   border-radius: var(--tabsdown-radius);
-  color: var(--darkgray);
+  color: var(--tabsdown-tab-color);
   font-family: var(--bodyFont);
   font-size: 0.9rem;
 }
@@ -192,6 +209,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .tabsdown {
-    --tabsdown-duration: 0ms;
+    --tabsdown-animation-duration: 0ms;
+  }
+
+  .tabsdown__tablist {
+    scroll-behavior: auto;
+  }
+
+  .tabsdown__tab {
+    transition: none;
   }
 }

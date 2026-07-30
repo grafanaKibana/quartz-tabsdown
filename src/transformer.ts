@@ -8,16 +8,6 @@ import styles from "./styles/tabsdown.scss";
 // @ts-expect-error - bundled to a browser-ready string by the inline script loader
 import script from "./scripts/tabsdown.inline.ts";
 
-export interface TabsdownOptions {
-  position: "top" | "left" | "right" | "bottom";
-  layout: "one" | "multi";
-}
-
-const defaultOptions: TabsdownOptions = {
-  position: "top",
-  layout: "one",
-};
-
 const positions = new Set<TabConfiguration>(["top", "left", "right", "bottom"]);
 
 function synthetic(
@@ -68,12 +58,9 @@ function iconElement(name: string): ElementContent | undefined {
   ]);
 }
 
-function resolveConfiguration(
-  configuration: readonly TabConfiguration[],
-  options: TabsdownOptions,
-): TabConfiguration[] {
-  let position: TabConfiguration = options.position;
-  let layout: TabConfiguration = options.layout;
+function resolveConfiguration(configuration: readonly TabConfiguration[]): TabConfiguration[] {
+  let position: TabConfiguration = "top";
+  let layout: TabConfiguration = "one";
   for (const value of configuration) {
     if (positions.has(value)) {
       position = value;
@@ -145,7 +132,7 @@ function panelNode(
   );
 }
 
-const remarkTabsdown = (options: TabsdownOptions): Plugin<[], MdastRoot> =>
+const remarkTabsdown = (): Plugin<[], MdastRoot> =>
   function () {
     const processor = this as unknown as Processor<MdastRoot>;
 
@@ -177,7 +164,7 @@ const remarkTabsdown = (options: TabsdownOptions): Plugin<[], MdastRoot> =>
         });
 
         const classNames = ["tabsdown"];
-        for (const value of resolveConfiguration(result.configuration ?? [], options)) {
+        for (const value of resolveConfiguration(result.configuration ?? [])) {
           classNames.push(`tabsdown--${value}`);
         }
 
@@ -191,13 +178,11 @@ const remarkTabsdown = (options: TabsdownOptions): Plugin<[], MdastRoot> =>
     };
   };
 
-export const Tabsdown: QuartzTransformerPlugin<Partial<TabsdownOptions>> = (userOptions) => {
-  const options = { ...defaultOptions, ...userOptions };
-
+export const Tabsdown: QuartzTransformerPlugin = () => {
   return {
     name: "Tabsdown",
     markdownPlugins(): PluggableList {
-      return [remarkTabsdown(options)];
+      return [remarkTabsdown()];
     },
     externalResources() {
       return {

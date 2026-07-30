@@ -1,5 +1,4 @@
 export { Tabsdown } from "./transformer";
-export type { TabsdownOptions } from "./transformer";
 export { parseTabs } from "./parser";
 export type {
   ParsedTab,

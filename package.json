@@ -97,28 +97,8 @@
     "dependencies": [],
     "defaultOrder": 60,
     "defaultEnabled": true,
-    "defaultOptions": {
-      "position": "top",
-      "layout": "one"
-    },
-    "optionSchema": {
-      "position": {
-        "type": "enum",
-        "values": [
-          "top",
-          "left",
-          "right",
-          "bottom"
-        ]
-      },
-      "layout": {
-        "type": "enum",
-        "values": [
-          "one",
-          "multi"
-        ]
-      }
-    }
+    "defaultOptions": {},
+    "optionSchema": {}
   },
   "engines": {
     "node": ">=22",
