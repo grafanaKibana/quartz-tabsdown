@@ -1,10 +1,3 @@
+// Only the plugin: Quartz's loader re-exports every other named export from
+// dist/index.d.ts as a value, so a type exported here breaks its generated index.
 export { Tabsdown } from "./transformer";
-export { parseTabs } from "./parser";
-export type {
-  ParsedTab,
-  TabConfiguration,
-  TabsDiagnostic,
-  TabsDiagnosticCode,
-  TabsParseResult,
-} from "./parser";
-export type { QuartzTransformerPlugin } from "@quartz-community/types";

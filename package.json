@@ -97,10 +97,9 @@
     "quartzVersion": ">=5.0.0",
     "requiresInstall": true,
     "dependencies": [],
+    "description": "Tabbed Markdown blocks using the Obsidian Tabsdown syntax.",
     "defaultOrder": 60,
-    "defaultEnabled": true,
-    "defaultOptions": {},
-    "optionSchema": {}
+    "defaultEnabled": true
   },
   "engines": {
     "node": ">=22",
