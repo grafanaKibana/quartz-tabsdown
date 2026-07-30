@@ -1,0 +1,130 @@
+{
+  "name": "quartz-tabsdown",
+  "version": "0.1.0",
+  "description": "Tabbed Markdown blocks for Quartz, matching the Obsidian Tabsdown plugin syntax.",
+  "type": "module",
+  "license": "MIT",
+  "author": "grafanaKibana",
+  "homepage": "https://github.com/grafanaKibana/quartz-tabsdown",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/grafanaKibana/quartz-tabsdown"
+  },
+  "keywords": [
+    "quartz",
+    "quartz-plugin",
+    "tabs",
+    "tabsdown",
+    "obsidian",
+    "remark",
+    "mdast"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier . --check",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run format && npm run test",
+    "prepublishOnly": "npm run build",
+    "release": "npm run build && changeset publish"
+  },
+  "peerDependencies": {
+    "preact": "^10.0.0",
+    "vfile": "^6.0.3"
+  },
+  "peerDependenciesMeta": {
+    "preact": {
+      "optional": true
+    },
+    "vfile": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@quartz-community/types": "^0.3.0"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.2",
+    "@types/hast": "^3.0.4",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "jsdom": "^30.0.1",
+    "lucide-static": "^1.27.0",
+    "prettier": "^3.6.2",
+    "rehype-stringify": "^10.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.1",
+    "sass": "^1.97.3",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "unified": "^11.0.5",
+    "vfile": "^6.0.3",
+    "vitest": "^2.1.9"
+  },
+  "quartz": {
+    "name": "tabsdown",
+    "displayName": "Tabsdown",
+    "category": "transformer",
+    "version": "0.1.0",
+    "quartzVersion": ">=5.0.0",
+    "requiresInstall": true,
+    "dependencies": [],
+    "defaultOrder": 60,
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "position": "top",
+      "layout": "one"
+    },
+    "optionSchema": {
+      "position": {
+        "type": "enum",
+        "values": [
+          "top",
+          "left",
+          "right",
+          "bottom"
+        ]
+      },
+      "layout": {
+        "type": "enum",
+        "values": [
+          "one",
+          "multi"
+        ]
+      }
+    }
+  },
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
