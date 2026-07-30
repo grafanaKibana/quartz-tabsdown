@@ -121,7 +121,20 @@ npm install
 npm run check
 ```
 
-`src/parser.ts` is vendored from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) so both plugins accept exactly the same syntax; it is plain TypeScript with no Obsidian imports. Keep the two copies in sync, along with `test/parser.test.ts`.
+### Staying in sync with obsidian-tabsdown
+
+```bash
+npm run check:upstream
+```
+
+`src/parser.ts` and `test/parser.test.ts` are vendored from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) so both plugins accept exactly the same syntax, and every custom property above tracks a Style Settings control there. This command fetches both and fails on any of:
+
+- a vendored file that no longer matches upstream, naming the first differing line;
+- a Style Settings control with no matching custom property here — including one added upstream, which must either be ported or listed in the script's `NOT_PORTED` map with a reason;
+- a slider default that no longer matches the upstream default;
+- a `NOT_PORTED` entry for a control that upstream has since deleted.
+
+CI runs it on every push and pull request, plus every Monday, so a change made in obsidian-tabsdown surfaces here even when nobody touches this repo.
 
 ## License
 

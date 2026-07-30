@@ -47,6 +47,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run format && npm run test",
+    "check:upstream": "node scripts/check-upstream-parity.mjs",
     "prepublishOnly": "npm run build",
     "release": "npm run build && changeset publish"
   },
@@ -85,7 +86,8 @@
     "typescript": "^5.9.3",
     "unified": "^11.0.5",
     "vfile": "^6.0.3",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "yaml": "^2.9.0"
   },
   "quartz": {
     "name": "tabsdown",
