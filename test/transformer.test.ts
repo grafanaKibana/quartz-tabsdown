@@ -137,11 +137,20 @@ describe("Tabsdown transformer", () => {
     expect(resources?.css?.[0]?.content).toContain(".tabsdown__panels--animating {");
     expect(resources?.css?.[0]?.content).toContain("overflow: clip");
     expect(resources?.css?.[0]?.content).toContain("transition: none");
+    expect(resources?.css?.[0]?.content).toContain('.tabsdown__tab[aria-expanded="true"]');
+    expect(resources?.css?.[0]?.content).toContain(".tabsdown.tabsdown--mounted {");
+    expect(resources?.css?.[0]?.content).toContain("container-type: normal");
+    expect(resources?.css?.[0]?.content).toContain(".tabsdown--collapsed > .tabsdown__tablist {");
+    expect(resources?.css?.[0]?.content).toContain("margin-block-end: 0");
     expect(resources?.js?.[0]).toMatchObject({
       contentType: "inline",
       loadTime: "afterDOMReady",
     });
     const js = resources?.js?.[0];
-    expect(js && "script" in js ? js.script : "").toContain("tabsdown__tablist");
+    const script = js && "script" in js ? js.script : "";
+    expect(script).toContain("tabsdown__tablist");
+    expect(script).toContain("mountTabs");
+    expect(script).toContain("window.tabsdown");
+    expect(script).toContain("tabsdown--mounted");
   });
 });

@@ -76,6 +76,47 @@ The emitted HTML carries no tab roles and hides no panels. Every panel is presen
 
 Tabs respond to pointer, touch, and keyboard (arrow keys, `Home`, `End`).
 
+## Mounting caller-owned panels
+
+Custom Quartz components can use the browser bridge to place Tabsdown controls around live panels they already own. The API is optional because it is absent when the plugin or its client script is disabled; its public types are available from `quartz-tabsdown/types`.
+
+```typescript
+import type { TabsController, TabsdownRuntime } from "quartz-tabsdown/types";
+
+const runtime: TabsdownRuntime | undefined = window.tabsdown;
+let tabs: TabsController | undefined;
+
+if (runtime) {
+  tabs = runtime.mountTabs(container, {
+    label: "Trace details",
+    tabs: [
+      { id: "trace", label: "Trace", panel: tracePanel },
+      { id: "watch", label: "Watch", panel: watchPanel },
+    ],
+    selection: null,
+    onSelectionChange(selection, previous) {
+      console.log({ selection, previous });
+    },
+  });
+}
+
+tabs?.setSelection("trace");
+tabs?.setAvailable("watch", false);
+tabs?.destroy();
+```
+
+`selection` is nullable. User actions and availability-forced collapse call `onSelectionChange`; `setSelection` is silent. The returned controller also exposes its committed `selection` and can be destroyed repeatedly.
+
+The panels are moved, not cloned. Tabsdown preserves their existing accessible names and focus targets, and `destroy()` returns them to the container in the supplied order with their managed attributes and classes restored. Quartz SPA cleanup destroys outstanding mounts automatically while keeping `window.tabsdown` available for the next page.
+
+Mounted controls are a disclosure group built from native buttons with `aria-expanded`. They intentionally do not use the authored-fence ARIA tablist model or intercept arrow, `Home`, and `End` keys. Authored `tabsdown` fences nested inside a caller panel retain their normal tab behavior.
+
+A host adapter can pass the standalone function without binding it:
+
+```typescript
+st.mount(root, config, { mountTabs: window.tabsdown!.mountTabs });
+```
+
 ## Malformed blocks
 
 A block that cannot be parsed renders a diagnostic with the message, the line, and the original source, instead of dropping the content.
