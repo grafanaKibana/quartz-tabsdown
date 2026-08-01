@@ -131,6 +131,12 @@ describe("Tabsdown transformer", () => {
     expect(resources?.css?.[0]?.content).toContain("--tabsdown-content-spacing: 12px");
     expect(resources?.css?.[0]?.content).toContain("--tabsdown-animation-speed: 160ms");
     expect(resources?.css?.[0]?.content).toContain("--tabsdown-tab-min-size: 44px");
+    expect(resources?.css?.[0]?.content).toContain(
+      "transition: height var(--tabsdown-animation-duration) ease",
+    );
+    expect(resources?.css?.[0]?.content).toContain(".tabsdown__panels--animating {");
+    expect(resources?.css?.[0]?.content).toContain("overflow: clip");
+    expect(resources?.css?.[0]?.content).toContain("transition: none");
     expect(resources?.js?.[0]).toMatchObject({
       contentType: "inline",
       loadTime: "afterDOMReady",

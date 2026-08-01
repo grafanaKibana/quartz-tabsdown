@@ -159,8 +159,17 @@
   min-inline-size: 0;
 }
 
+.tabsdown__panel {
+  display: flow-root;
+}
+
 .tabsdown__panels {
   display: flow-root;
+  transition: height var(--tabsdown-animation-duration) ease;
+}
+
+.tabsdown__panels--animating {
+  overflow: clip;
 }
 
 .tabsdown__panel[hidden] {
@@ -250,6 +259,10 @@
   }
 
   .tabsdown__tab {
+    transition: none;
+  }
+
+  .tabsdown__panels {
     transition: none;
   }
 }
