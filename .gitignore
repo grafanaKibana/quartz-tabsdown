@@ -40,3 +40,7 @@ coverage/
 .cache/
 .eslintcache
 dist/
+
+# Local agent state
+.omc/
+.omx/
