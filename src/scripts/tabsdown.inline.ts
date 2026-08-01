@@ -165,7 +165,13 @@ function select(root: HTMLElement, index: number, focus: boolean, animate = true
   const tabs = tabsOf(root);
   const panels = panelsOf(root);
   const current = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
-  if (current === index) return;
+  if (current === index) {
+    if (focus) {
+      tabs[index]?.focus();
+      tabs[index]?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    }
+    return;
+  }
 
   const wrapper = root.querySelector<HTMLElement>(":scope > .tabsdown__panels");
   const start = wrapper?.getBoundingClientRect().height ?? 0;

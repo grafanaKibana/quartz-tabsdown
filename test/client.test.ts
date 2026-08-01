@@ -229,9 +229,15 @@ describe("client script", () => {
     tabs()[1]?.click();
     controls.flushFrame();
     const pendingFrames = controls.frames.size;
+    const selected = tabs()[1]!;
+    const scrollIntoView = vi.fn();
+    selected.scrollIntoView = scrollIntoView;
+    tabs()[0]?.focus();
 
-    tabs()[1]?.click();
+    selected.click();
 
+    expect(document.activeElement).toBe(selected);
+    expect(scrollIntoView).toHaveBeenCalledOnce();
     expect(wrapper().style.height).toBe("240px");
     expect(wrapper().classList.contains("tabsdown__panels--animating")).toBe(true);
     expect(controls.frames.size).toBe(pendingFrames);
