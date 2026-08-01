@@ -533,6 +533,23 @@ describe("public mountTabs bridge", () => {
     expect(state.controller.selection).toBe("second");
   });
 
+  test("queues a reentrant collapse notification when the callback disables the selection", () => {
+    const state: { controller?: TabsController } = {};
+    const changes = vi.fn((selection: string | null) => {
+      if (selection === "first") state.controller?.setAvailable("first", false);
+    });
+    const mounted = callerTabs({ onSelectionChange: changes });
+    state.controller = mounted.controller;
+
+    mounted.buttons[0]!.click();
+
+    expect(state.controller.selection).toBeNull();
+    expect(changes.mock.calls).toEqual([
+      ["first", null],
+      [null, "first"],
+    ]);
+  });
+
   test("preserves initial focus and relocates focus before hiding controls or panels", () => {
     const container = document.createElement("div");
     const first = document.createElement("div");
@@ -570,6 +587,49 @@ describe("public mountTabs bridge", () => {
     buttons[0]!.focus();
     controller.setAvailable("first", false);
     expect(document.activeElement).toBe(root);
+  });
+
+  test("does not select a destination disabled by its focus handler", () => {
+    const mounted = callerTabs({ selection: "first" });
+    mounted.first.append(document.createElement("input"));
+    mounted.first.querySelector("input")!.focus();
+    mounted.buttons[1]!.onfocus = () => mounted.controller.setAvailable("second", false);
+
+    mounted.controller.setSelection("second");
+
+    expect(mounted.controller.selection).toBe("first");
+    expect(mounted.buttons[1]!.hidden).toBe(true);
+    expect([mounted.first.hidden, mounted.second.hidden]).toEqual([false, true]);
+  });
+
+  test("does not mutate restored panels when destination focus destroys the controller", () => {
+    const container = document.createElement("div");
+    const first = document.createElement("section");
+    const second = document.createElement("section");
+    const input = document.createElement("input");
+    first.append(input);
+    second.hidden = true;
+    container.append(first, second);
+    document.body.append(container);
+    const originals = [first, second].map((panel) => panel.outerHTML);
+    const controller = window.tabsdown!.mountTabs(container, {
+      label: "Destroy on focus",
+      selection: "first",
+      tabs: [
+        { id: "first", label: "First", panel: first },
+        { id: "second", label: "Second", panel: second },
+      ],
+    });
+    const root = container.querySelector<HTMLElement>(".tabsdown--mounted")!;
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>(".tabsdown__tab"));
+    input.focus();
+    buttons[1]!.onfocus = () => controller.destroy();
+
+    controller.setSelection("second");
+
+    expect(root.isConnected).toBe(false);
+    expect(controller.selection).toBe("first");
+    expect([first.outerHTML, second.outerHTML]).toEqual(originals);
   });
 
   test("focuses the matching generated control when a focused panel starts collapsed", () => {
@@ -866,6 +926,74 @@ describe("public mountTabs bridge", () => {
     expect(mounted.root.contains(mounted.first)).toBe(true);
   });
 
+  test("rejects descendant id collisions before moving any caller panel", () => {
+    const destinationDuplicate = document.createElement("div");
+    destinationDuplicate.id = "destination-duplicate";
+    document.body.append(destinationDuplicate);
+
+    const cases = [
+      ["shared-descendant", "shared-descendant"],
+      ["destination-duplicate", "unique-descendant"],
+    ] as const;
+    cases.forEach(([firstId, secondId]) => {
+      const container = document.createElement("div");
+      const firstOrigin = document.createElement("div");
+      const secondOrigin = document.createElement("div");
+      const first = document.createElement("section");
+      const second = document.createElement("section");
+      const firstChild = document.createElement("span");
+      const secondChild = document.createElement("span");
+      firstChild.id = firstId;
+      secondChild.id = secondId;
+      first.append(firstChild);
+      second.append(secondChild);
+      firstOrigin.append(first);
+      secondOrigin.append(second);
+      document.body.append(container, firstOrigin, secondOrigin);
+      const before = container.innerHTML;
+
+      expect(() =>
+        window.tabsdown!.mountTabs(container, {
+          label: "Descendant ids",
+          tabs: [
+            { id: "first", label: "First", panel: first },
+            { id: "second", label: "Second", panel: second },
+          ],
+        }),
+      ).toThrow("Tabsdown:");
+      expect(container.innerHTML).toBe(before);
+      expect(first.parentElement).toBe(firstOrigin);
+      expect(second.parentElement).toBe(secondOrigin);
+    });
+  });
+
+  test("allows an explicit empty descendant id while generating valid panel ids", () => {
+    const container = document.createElement("div");
+    const first = document.createElement("section");
+    const second = document.createElement("section");
+    const descendant = document.createElement("span");
+    descendant.setAttribute("id", "");
+    first.append(descendant);
+    container.append(first, second);
+    document.body.append(container);
+
+    window.tabsdown!.mountTabs(container, {
+      label: "Empty descendant id",
+      tabs: [
+        { id: "first", label: "First", panel: first },
+        { id: "second", label: "Second", panel: second },
+      ],
+    });
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>(".tabsdown__tab"));
+
+    expect(descendant.getAttribute("id")).toBe("");
+    expect([first.id, second.id].every(Boolean)).toBe(true);
+    expect(buttons.map((button) => button.getAttribute("aria-controls"))).toEqual([
+      first.id,
+      second.id,
+    ]);
+  });
+
   test("preserves caller naming and focus stops and adds only missing semantics", () => {
     const container = document.createElement("div");
     const named = document.createElement("div");
@@ -926,6 +1054,18 @@ describe("public mountTabs bridge", () => {
     expect(container.querySelector(".tabsdown--mounted")).toBeNull();
     expect(Array.from(container.children)).toEqual([first, second]);
     expect([first.outerHTML, second.outerHTML]).toEqual(originals);
+  });
+
+  test("preserves a focused panel descendant when destroy returns caller panels", () => {
+    const mounted = callerTabs({ selection: "first" });
+    const input = document.createElement("input");
+    mounted.first.append(input);
+    input.focus();
+
+    mounted.controller.destroy();
+
+    expect(document.activeElement).toBe(input);
+    expect(mounted.container.contains(input)).toBe(true);
   });
 
   test("destroys all mounts during Quartz cleanup and keeps the bridge reusable", () => {

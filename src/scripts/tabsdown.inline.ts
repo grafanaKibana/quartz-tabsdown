@@ -26,7 +26,14 @@ interface HeightOperation {
 const heightOperations = new Map<HTMLElement, HeightOperation>();
 const publicControllers = new Set<TabsController>();
 const mountedPanels = new WeakSet<HTMLElement>();
-const managedPanelAttributes = ["id", "role", "tabindex", "aria-labelledby", "hidden"] as const;
+const managedPanelAttributes = [
+  "id",
+  "role",
+  "tabindex",
+  "aria-labelledby",
+  "hidden",
+  "class",
+] as const;
 const genericPanelTags = new Set(["DIV", "SPAN", "PRE"]);
 const focusableSelector =
   'a[href], audio[controls], button:not([disabled]), details, iframe, input:not([disabled]):not([type="hidden"]), select:not([disabled]), summary, textarea:not([disabled]), video[controls], [contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex="-1"]):not([disabled])';
@@ -42,8 +49,13 @@ function isShadowIncludingAncestor(ancestor: Node, node: Node): boolean {
 }
 
 function findById(scope: ParentNode, id: string): Element | null {
-  if ("id" in scope && (scope as Element).id === id) return scope as Element;
-  return scope.querySelector(`#${CSS.escape(id)}`);
+  return findAllById(scope, id)[0] ?? null;
+}
+
+function findAllById(scope: ParentNode, id: string): Element[] {
+  const matches = Array.from(scope.querySelectorAll(`#${CSS.escape(id)}`));
+  if ("id" in scope && (scope as Element).id === id) matches.unshift(scope as Element);
+  return matches;
 }
 
 function activeElementNear(node: Node): Element | null {
@@ -61,7 +73,6 @@ interface MountedTab {
   panel: HTMLElement;
   available: boolean;
   restore: Map<string, string | null>;
-  hadPanelClass: boolean;
 }
 
 function timeMs(value: string): number {
@@ -251,14 +262,6 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
     }
     return null;
   };
-  if (
-    options.tabs.some((tab) => {
-      const existing = tab.panel.id ? findMountedId(tab.panel.id) : null;
-      return existing !== null && existing !== tab.panel;
-    })
-  ) {
-    throw new Error("Tabsdown: a panel DOM id is already used in the target tree.");
-  }
   if (options.tabs.some((tab) => isShadowIncludingAncestor(tab.panel, container))) {
     throw new Error("Tabsdown: a mounted panel cannot contain its container.");
   }
@@ -266,15 +269,27 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
     throw new Error("Tabsdown: this container already has mounted tabs.");
   }
 
+  const identifiedElements = options.tabs.flatMap((tab) => [
+    ...(tab.panel.id ? [tab.panel] : []),
+    ...Array.from(tab.panel.querySelectorAll<HTMLElement>("[id]")).filter((element) => element.id),
+  ]);
+  const identifiedIds = identifiedElements.map((element) => element.id);
+  if (new Set(identifiedIds).size !== identifiedIds.length) {
+    throw new Error("Tabsdown: mounted panel descendant DOM ids must be unique.");
+  }
+  const transferredElements = new Set<Element>(identifiedElements);
+  if (
+    identifiedElements.some((element) =>
+      idScopes.some((scope) =>
+        findAllById(scope, element.id).some((existing) => !transferredElements.has(existing)),
+      ),
+    )
+  ) {
+    throw new Error("Tabsdown: a panel DOM id is already used in the target tree.");
+  }
+
   const mountId = `tabsdown-mount-${++nextMountId}`;
-  const assignedIds = new Set(
-    options.tabs
-      .flatMap((tab) => [
-        tab.panel.id,
-        ...Array.from(tab.panel.querySelectorAll<HTMLElement>("[id]"), (element) => element.id),
-      ])
-      .filter(Boolean),
-  );
+  const assignedIds = new Set(identifiedIds);
   const uniqueId = (base: string): string => {
     let candidate = base;
     for (
@@ -333,7 +348,6 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
       tab.panel.tabIndex = 0;
     }
     button.setAttribute("aria-controls", tab.panel.id);
-    const hadPanelClass = tab.panel.classList.contains("tabsdown__panel");
     tab.panel.classList.add("tabsdown__panel");
     panelsElement.append(tab.panel);
 
@@ -343,7 +357,6 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
       panel: tab.panel,
       available: true,
       restore,
-      hadPanelClass,
     };
   });
 
@@ -352,6 +365,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
 
   let selection: string | null = null;
   let notifying = false;
+  const pendingNotifications: Array<[string | null, string | null]> = [];
   let destroyed = false;
   const find = (id: string): MountedTab | undefined => mountedTabs.find((tab) => tab.id === id);
   const applyState = (): void => {
@@ -374,15 +388,22 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
     if (active && outgoing && isShadowIncludingAncestor(outgoing.panel, active)) {
       (next === null ? root : (find(next)?.button ?? root)).focus();
     }
+    if (destroyed || selection !== previous || (next !== null && !find(next)?.available)) return;
     selection = next;
     applyState();
     const target = next === null ? 0 : panelMarginBox(find(next)!.panel);
     animateHeight(panelsElement, start, target, Boolean(operation));
-    if (!notify || notifying) return;
+    if (!notify) return;
+    pendingNotifications.push([selection, previous]);
+    if (notifying) return;
     notifying = true;
     try {
-      options.onSelectionChange?.(selection, previous);
+      let notification: [string | null, string | null] | undefined;
+      while ((notification = pendingNotifications.shift())) {
+        options.onSelectionChange?.(...notification);
+      }
     } finally {
+      pendingNotifications.length = 0;
       notifying = false;
     }
   };
@@ -444,6 +465,11 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
     destroy(): void {
       if (destroyed) return;
       destroyed = true;
+      const focusedElement = mountedTabs
+        .map((tab) => activeElementNear(tab.panel))
+        .find(
+          (active, index) => active && isShadowIncludingAncestor(mountedTabs[index]!.panel, active),
+        );
       heightOperations.get(panelsElement)?.cleanup();
       tabList.removeEventListener("click", onPublicClick);
       mountedTabs.forEach((tab) => {
@@ -452,10 +478,10 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
           if (value === null) tab.panel.removeAttribute(name);
           else tab.panel.setAttribute(name, value);
         });
-        if (!tab.hadPanelClass) tab.panel.classList.remove("tabsdown__panel");
         container.append(tab.panel);
       });
       root.remove();
+      if (focusedElement && "focus" in focusedElement) (focusedElement as HTMLElement).focus();
       publicControllers.delete(controller);
     },
   };
