@@ -15,6 +15,28 @@ export type {
   TabsParseResult,
 } from "./parser";
 
+export {
+  STYLE_SETTINGS_CONTRACT,
+  type TabsdownAlignment,
+  type TabsdownGlobalStyleOptions,
+  type TabsdownMotionStyleOptions,
+  type TabsdownNestedStyle,
+  type TabsdownOptions,
+  type TabsdownOverflow,
+  type TabsdownPalette,
+  type TabsdownPersonality,
+  type TabsdownPosition,
+  type TabsdownPositionAlignment,
+  type TabsdownPositionPalette,
+  type TabsdownPositionPersonality,
+  type TabsdownPositionStyleOptions,
+  type TabsdownSelectedFontWeight,
+  type TabsdownSize,
+  type TabsdownStyleOptions,
+  type TabsdownStyleOptions as TabsdownStyles,
+  type TabsdownStyleSettingContract,
+} from "./style-options";
+
 export interface TabSpec {
   id: string;
   label: string;

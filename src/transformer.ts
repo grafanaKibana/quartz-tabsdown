@@ -4,6 +4,12 @@ import type { PluggableList, Plugin, Processor } from "unified";
 import type { QuartzTransformerPlugin } from "@quartz-community/types";
 import iconNodes from "lucide-static/icon-nodes.json";
 import { parseTabs, type ParsedTab, type TabConfiguration, type TabsDiagnostic } from "./parser";
+import {
+  resolveTabsdownStyles,
+  tabsdownStyleClasses,
+  tabsdownStyleVariables,
+  type TabsdownOptions,
+} from "./style-options";
 import styles from "./styles/tabsdown.scss";
 // @ts-expect-error - bundled to a browser-ready string by the inline script loader
 import script from "./scripts/tabsdown.inline.ts";
@@ -132,24 +138,24 @@ function panelNode(
   );
 }
 
-const remarkTabsdown = (): Plugin<[], MdastRoot> =>
+const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> =>
   function () {
     const processor = this as unknown as Processor<MdastRoot>;
 
     return (tree: MdastRoot) => {
       let blockCount = 0;
 
-      function transform(parent: Parent): void {
+      function transform(parent: Parent, depth = 0): void {
         parent.children.forEach((child, index) => {
           if (child.type === "code" && child.lang === "tabsdown") {
-            parent.children[index] = block(child.value);
+            parent.children[index] = block(child.value, depth);
           } else if ("children" in child) {
-            transform(child);
+            transform(child, depth);
           }
         });
       }
 
-      function block(source: string): RootContent {
+      function block(source: string, depth: number): RootContent {
         const result = parseTabs(source);
         if (!result.ok) {
           return diagnosticNode(result.diagnostic);
@@ -159,11 +165,17 @@ const remarkTabsdown = (): Plugin<[], MdastRoot> =>
         const buttons = result.tabs.map((tab, index) => tabButton(tab, blockId, index));
         const panels = result.tabs.map((tab, index) => {
           const body = processor.parse(tab.body);
-          transform(body);
+          transform(body, depth + 1);
           return panelNode(tab, blockId, index, body.children);
         });
 
-        const classNames = ["tabsdown"];
+        const classNames = ["tabsdown", ...styleClasses];
+        if (depth > 0) {
+          classNames.push(`tabsdown--nested-${depth % 2 === 1 ? "odd" : "even"}`);
+        }
+        if (result.configuration?.some((value) => value === "one" || value === "multi")) {
+          classNames.push("tabsdown--inline-overflow");
+        }
         for (const value of resolveConfiguration(result.configuration ?? [])) {
           classNames.push(`tabsdown--${value}`);
         }
@@ -178,16 +190,26 @@ const remarkTabsdown = (): Plugin<[], MdastRoot> =>
     };
   };
 
-export const Tabsdown: QuartzTransformerPlugin = () => {
+export const Tabsdown: QuartzTransformerPlugin<TabsdownOptions> = (options) => {
+  const resolvedStyles = resolveTabsdownStyles(options);
+  const styleClasses = tabsdownStyleClasses(resolvedStyles);
+  const mountedStyleClasses = styleClasses.filter(
+    (name) => !/^tabsdown-(?:top|bottom|left|right)-/.test(name),
+  );
+  const configuredScript = script.replace(
+    "__TABSDOWN_STYLE_CLASSES__",
+    mountedStyleClasses.join(" "),
+  );
+
   return {
     name: "Tabsdown",
     markdownPlugins(): PluggableList {
-      return [remarkTabsdown()];
+      return [remarkTabsdown(styleClasses)];
     },
     externalResources() {
       return {
-        css: [{ content: styles, inline: true }],
-        js: [{ contentType: "inline", loadTime: "afterDOMReady", script }],
+        css: [{ content: `${styles}\n${tabsdownStyleVariables(resolvedStyles)}`, inline: true }],
+        js: [{ contentType: "inline", loadTime: "afterDOMReady", script: configuredScript }],
       };
     },
   };

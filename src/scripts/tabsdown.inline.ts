@@ -1,5 +1,10 @@
 import type { MountTabsOptions, TabsController } from "../types";
 
+const configuredStyleClasses = "__TABSDOWN_STYLE_CLASSES__";
+const styleClasses = configuredStyleClasses.startsWith("__")
+  ? []
+  : configuredStyleClasses.split(" ");
+
 function tabsOf(root: HTMLElement): HTMLButtonElement[] {
   return Array.from(
     root.querySelectorAll<HTMLButtonElement>(":scope > .tabsdown__tablist > .tabsdown__tab"),
@@ -305,6 +310,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
 
   const root = ownerDocument.createElement("div");
   root.className = "tabsdown tabsdown--mounted";
+  root.classList.add(...styleClasses);
   root.dataset.tabsdown = "interactive";
   root.tabIndex = -1;
   const tabList = ownerDocument.createElement("div");

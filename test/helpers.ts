@@ -3,6 +3,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
+import type { TabsdownOptions } from "../src/style-options";
 import { Tabsdown } from "../src/transformer";
 
 export const createCtx = (): BuildCtx => ({
@@ -22,8 +23,8 @@ export const createCtx = (): BuildCtx => ({
   incremental: false,
 });
 
-export const render = async (markdown: string): Promise<string> => {
-  const transformer = Tabsdown();
+export const render = async (markdown: string, options?: TabsdownOptions): Promise<string> => {
+  const transformer = Tabsdown(options);
   const file = await unified()
     .use(remarkParse)
     .use(transformer.markdownPlugins?.(createCtx()) ?? [])

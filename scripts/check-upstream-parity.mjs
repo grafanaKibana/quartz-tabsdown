@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { format, resolveConfig } from "prettier";
 import { parse } from "yaml";
+import { STYLE_SETTINGS_CONTRACT } from "../dist/types.js";
 
 const UPSTREAM = "https://raw.githubusercontent.com/grafanaKibana/obsidian-tabsdown/main";
 const STYLESHEET = "src/styles/tabsdown.scss";
@@ -10,23 +11,6 @@ const VENDORED = [
   ["src/parser.ts", "src/parser.ts"],
   ["tests/parser.test.ts", "test/parser.test.ts"],
 ];
-
-/**
- * Style Settings controls with no Quartz counterpart: preset switches that need a
- * settings panel to toggle. Anything not listed here must exist as a custom
- * property, so a control added upstream fails instead of being forgotten.
- */
-const NOT_PORTED = new Map([
-  [
-    "tabsdown-density",
-    "preset switch; --tabsdown-tab-min-size and the padding properties cover it",
-  ],
-  ["tabsdown-personality", "preset switch; restyle .tabsdown__tab instead"],
-  ["tabsdown-overflow", "preset switch; per-block `config: one|multi` covers it"],
-  ["tabsdown-palette", "preset switch; the --tabsdown-tab-* properties cover it"],
-  ["tabsdown-alignment", "preset switch; restyle .tabsdown__tablist instead"],
-  ["tabsdown-animations-disabled", "preset switch; set --tabsdown-animation-speed to 0ms"],
-]);
 
 const problems = [];
 
@@ -46,9 +30,7 @@ async function checkVendoredFiles() {
       filepath: vendoredPath,
     });
     const vendored = await readFile(vendoredPath, "utf8");
-    if (upstream === vendored) {
-      continue;
-    }
+    if (upstream === vendored) continue;
 
     const upstreamLines = upstream.split("\n");
     const vendoredLines = vendored.split("\n");
@@ -61,66 +43,82 @@ async function checkVendoredFiles() {
   }
 }
 
+function compare(id, field, actual, expected) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    problems.push(
+      `${id} ${field} drifted: upstream is ${JSON.stringify(actual)}, Quartz maps ${JSON.stringify(expected)}`,
+    );
+  }
+}
+
 async function checkStyleSettings() {
   const block = /\/\*\s*@settings\s*\n([\s\S]*?)\*\//.exec(await fetchUpstream("styles.css"))?.[1];
   if (!block) {
     throw new Error("no @settings block in the upstream stylesheet — has its format changed?");
   }
 
-  const { settings } = parse(block);
-  if (!Array.isArray(settings)) {
+  const parsed = parse(block).settings;
+  if (!Array.isArray(parsed)) {
     throw new Error("the upstream @settings block has no settings list");
   }
 
+  const upstream = parsed.filter(({ type }) => type !== "heading");
+  const mappings = new Map(STYLE_SETTINGS_CONTRACT.map((setting) => [setting.id, setting]));
   const stylesheet = await readFile(STYLESHEET, "utf8");
-  const upstreamIds = new Set();
 
-  for (const setting of settings) {
-    const { id, title, type, format: unit = "" } = setting;
-    upstreamIds.add(id);
-    if (NOT_PORTED.has(id)) {
+  for (const setting of upstream) {
+    const mapping = mappings.get(setting.id);
+    if (!mapping) {
+      problems.push(`${setting.id} (${setting.title}) has no options.styles mapping`);
       continue;
     }
+    mappings.delete(setting.id);
 
-    const property = `--${id}`;
-    if (!stylesheet.includes(property)) {
-      problems.push(
-        `${STYLESHEET} has no ${property} for Style Settings "${title}" (${type}) — port it, or add "${id}" to NOT_PORTED with a reason`,
+    compare(setting.id, "type", setting.type, mapping.type);
+    compare(setting.id, "default", setting.default ?? null, mapping.default);
+
+    if (setting.type === "class-select") {
+      compare(
+        setting.id,
+        "enum values",
+        setting.options?.map(({ value }) => value) ?? [],
+        mapping.enums,
       );
-      continue;
-    }
-
-    const expected = `${property}: ${setting.default}${unit};`;
-    if (type === "variable-number-slider" && !stylesheet.includes(expected)) {
+    } else if (setting.type === "variable-number-slider") {
+      compare(setting.id, "minimum", setting.min, mapping.min);
+      compare(setting.id, "maximum", setting.max, mapping.max);
+      compare(setting.id, "step", setting.step, mapping.step);
+      compare(setting.id, "unit", setting.format, mapping.unit);
+      if (!stylesheet.includes(`--${setting.id}`)) {
+        problems.push(
+          `${STYLESHEET} has no --${setting.id} used by options.styles.${mapping.path}`,
+        );
+      }
+    } else if (!stylesheet.includes(setting.id)) {
       problems.push(
-        `${property} should default to ${setting.default}${unit} to match Style Settings "${title}" — expected the line \`${expected}\``,
+        `${STYLESHEET} has no ${setting.id} rule used by options.styles.${mapping.path}`,
       );
     }
   }
 
-  for (const [id, reason] of NOT_PORTED) {
-    if (!upstreamIds.has(id)) {
-      problems.push(
-        `NOT_PORTED lists "${id}" (${reason}) but it no longer exists upstream — drop it`,
-      );
-    }
+  for (const [id, mapping] of mappings) {
+    problems.push(
+      `options.styles.${mapping.path} maps ${id}, but that control no longer exists upstream`,
+    );
   }
 
-  return settings.length;
+  return upstream.length;
 }
 
 await checkVendoredFiles();
 const controls = await checkStyleSettings();
 
 if (problems.length > 0) {
-  for (const problem of problems) {
-    console.error(`::error::${problem}`);
-  }
+  for (const problem of problems) console.error(`::error::${problem}`);
   process.exit(1);
 }
 
 console.log(
-  `In sync with obsidian-tabsdown: ${VENDORED.length} vendored files identical, ` +
-    `${controls - NOT_PORTED.size} of ${controls} Style Settings controls mapped, ` +
-    `${NOT_PORTED.size} deliberately not ported.`,
+  `In sync with obsidian-tabsdown: ${VENDORED.length} vendored files identical and ` +
+    `${controls} Style Settings controls mapped with defaults, types, enums, ranges, steps, and units.`,
 );
