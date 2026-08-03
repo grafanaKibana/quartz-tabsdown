@@ -13,6 +13,10 @@ npx quartz plugin add github:grafanaKibana/quartz-tabsdown
 plugins:
   - source: github:grafanaKibana/quartz-tabsdown
     enabled: true
+    options:
+      styles:
+        personality: underline
+        gap: 8
 ```
 
 Or wire it up directly in `quartz.ts`:
@@ -20,10 +24,10 @@ Or wire it up directly in `quartz.ts`:
 ```typescript
 import { Tabsdown } from "quartz-tabsdown";
 
-transformers: [Tabsdown()];
+transformers: [Tabsdown({ styles: { personality: "underline", gap: 8 } })];
 ```
 
-The plugin takes no options. Each block configures itself with a `config:` marker, exactly as it does in Obsidian, and appearance comes from CSS.
+All appearance options are optional and live under `options.styles`. Omit the object—or pass `styles: {}`—to use the Obsidian Style Settings defaults. Invalid names, enum values, colors, ranges, and slider steps fail the build with their complete configuration path.
 
 It declares `order: 10` so it runs **before** Obsidian Flavored Markdown. Tab bodies are parsed into the tree during this pass, and the transformers that follow then process them like any other content — that is what makes wikilinks, highlights, and callouts work inside a tab. Raising the order above OFM's silently degrades those: a wikilink inside a tab renders as a dead link and a callout as a plain blockquote.
 
@@ -125,37 +129,96 @@ A block that cannot be parsed renders a diagnostic with the message, the line, a
 
 Styles are injected inline and resolve against Quartz's own theme variables, so tabs follow the active theme in both light and dark mode.
 
-Every value that the Obsidian plugin exposes through Style Settings is a custom property here, defaulted to that control's default. Obsidian has a settings panel to move them; Quartz does not, so you set them in your own stylesheet:
+Use `options.styles` for ordinary Tabsdown appearance. A minimal override is:
 
-```css
-.tabsdown {
-  --tabsdown-gap: 8px;
-  --tabsdown-radius: 0;
-}
+```yaml
+options:
+  styles:
+    personality: underline
+    gap: 8
 ```
 
-| Property                             | Default             | Obsidian Style Settings control |
-| ------------------------------------ | ------------------- | ------------------------------- |
-| `--tabsdown-gap`                     | `4px`               | Gap between tabs                |
-| `--tabsdown-radius`                  | `4px`               | Corner radius                   |
-| `--tabsdown-content-spacing`         | `12px`              | Content spacing                 |
-| `--tabsdown-animation-speed`         | `160ms`             | Animation speed                 |
-| `--tabsdown-tab-min-size`            | `44px`              | Size                            |
-| `--tabsdown-tab-padding-block`       | `0.5rem`            | Size                            |
-| `--tabsdown-tab-padding-inline`      | `0.75rem`           | Size                            |
-| `--tabsdown-accent-override`         | unset, theme accent | Accent                          |
-| `--tabsdown-tab-background`          | `var(--highlight)`  | Palette                         |
-| `--tabsdown-tab-border`              | `var(--lightgray)`  | Palette                         |
-| `--tabsdown-tab-color`               | `var(--darkgray)`   | Palette                         |
-| `--tabsdown-tab-hover-background`    | `var(--lightgray)`  | Palette                         |
-| `--tabsdown-tab-hover-border`        | `var(--gray)`       | Palette                         |
-| `--tabsdown-tab-selected-background` | accent              | Palette                         |
-| `--tabsdown-tab-selected-border`     | accent              | Palette                         |
-| `--tabsdown-tab-selected-color`      | `var(--light)`      | Palette                         |
+A complete configuration matching the Obsidian contract is:
 
-Style Settings' preset _variants_ — compact density, underline personality, secondary palette, centred and equal-width alignment — are not ported, since there is no settings UI to switch them. The properties above cover the same ground from CSS.
+```yaml
+options:
+  styles:
+    size: default
+    personality: underline
+    overflow: scroll
+    palette: primary
+    accent: null
+    alignment: equal-width
+    themeButtonOutline: false
+    underlineThickness: 3
+    gap: 8
+    radius: 4
+    horizontalPadding: 36
+    contentSpacing: 12
+    sideWidth: 192
+    iconSize: 16
+    iconSpacing: 6
+    selectedFontWeight: theme-default
+    nestedStyle: flat
+    positions:
+      top:
+        personality: inherit
+        palette: inherit
+        alignment: inherit
+      bottom:
+        personality: inherit
+        palette: inherit
+        alignment: inherit
+      left:
+        personality: inherit
+        palette: inherit
+        alignment: inherit
+      right:
+        personality: inherit
+        palette: inherit
+        alignment: inherit
+    motion:
+      speed: 300
+      disabled: false
+```
 
-`prefers-reduced-motion` drops the animation duration to zero, as in Obsidian.
+### Schema
+
+| Key                  | Accepted values                   | Default                |
+| -------------------- | --------------------------------- | ---------------------- |
+| `size`               | `compact`, `default`              | `default`              |
+| `personality`        | `default`, `underline`            | `default`              |
+| `overflow`           | `scroll`, `wrap`                  | `scroll`               |
+| `palette`            | `primary`, `secondary`            | `primary`              |
+| `accent`             | CSS color or `null`               | `null` (Quartz accent) |
+| `alignment`          | `start`, `center`, `equal-width`  | `start`                |
+| `themeButtonOutline` | boolean                           | `false`                |
+| `underlineThickness` | `1`–`8` px                        | `2`                    |
+| `gap`                | `0`–`48` px                       | `4`                    |
+| `radius`             | `0`–`24` px                       | `4`                    |
+| `horizontalPadding`  | `0`–`48` px                       | `36`                   |
+| `contentSpacing`     | `0`–`48` px                       | `12`                   |
+| `sideWidth`          | `192`–`320` px, step `8`          | `192`                  |
+| `iconSize`           | `12`–`32` px                      | `16`                   |
+| `iconSpacing`        | `0`–`16` px                       | `6`                    |
+| `selectedFontWeight` | `theme-default`, `medium`, `bold` | `theme-default`        |
+| `nestedStyle`        | `card`, `flat`                    | `card`                 |
+| `motion.speed`       | `0`–`500` ms, step `20`           | `160`                  |
+| `motion.disabled`    | boolean                           | `false`                |
+
+Every `positions.top`, `positions.bottom`, `positions.left`, and `positions.right` entry accepts the same three optional overrides:
+
+| Position key  | Accepted values                             | Default   |
+| ------------- | ------------------------------------------- | --------- |
+| `personality` | `inherit`, `button`, `underline`            | `inherit` |
+| `palette`     | `inherit`, `primary`, `secondary`           | `inherit` |
+| `alignment`   | `inherit`, `start`, `center`, `equal-width` | `inherit` |
+
+`options.styles` is site-wide. A fenced block's `config: top|bottom|left|right, one|multi` marker still owns that block's structure and explicit overflow. Position overrides apply only to authored fences in the matching position. The public `mountTabs` runtime receives global styles and ignores position overrides.
+
+`motion.disabled: true` disables Tabsdown motion regardless of `motion.speed`. The reader's `prefers-reduced-motion` setting still disables it when the explicit toggle is false.
+
+Arbitrary one-off styling remains possible in Quartz `custom.scss`, but supported variants should use `options.styles`; consumers do not need to copy Tabsdown's stylesheet.
 
 ## Development
 
@@ -180,12 +243,12 @@ Quartz v5 has no release tag — it builds from a moving default branch — so C
 npm run check:upstream
 ```
 
-`src/parser.ts` and `test/parser.test.ts` are vendored from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) so both plugins accept exactly the same syntax, and every custom property above tracks a Style Settings control there. This command fetches both and fails on any of:
+`src/parser.ts` and `test/parser.test.ts` are vendored from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) so both plugins accept exactly the same syntax. The same machine-readable contract drives Quartz validation and the Style Settings parity check. This command builds the package, fetches upstream, and fails on any of:
 
 - a vendored file that no longer matches upstream, naming the first differing line;
-- a Style Settings control with no matching custom property here — including one added upstream, which must either be ported or listed in the script's `NOT_PORTED` map with a reason;
-- a slider default that no longer matches the upstream default;
-- a `NOT_PORTED` entry for a control that upstream has since deleted.
+- an added, removed, or renamed Style Settings control;
+- a changed control type, default, enum value, range, step, or unit;
+- a numeric/color/toggle control with no corresponding plugin-owned CSS rule.
 
 CI runs it on every push and pull request, plus every Monday, so a change made in obsidian-tabsdown surfaces here even when nobody touches this repo.
 

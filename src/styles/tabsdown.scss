@@ -4,11 +4,16 @@
 .tabsdown {
   --tabsdown-gap: 4px;
   --tabsdown-radius: 4px;
+  --tabsdown-horizontal-padding: 36px;
   --tabsdown-content-spacing: 12px;
+  --tabsdown-side-width: 192px;
+  --tabsdown-icon-size: 16px;
+  --tabsdown-icon-spacing: 6px;
+  --tabsdown-underline-thickness: 2px;
   --tabsdown-animation-speed: 160ms;
   --tabsdown-tab-min-size: 44px;
   --tabsdown-tab-padding-block: 0.5rem;
-  --tabsdown-tab-padding-inline: 0.75rem;
+  --tabsdown-tab-padding-inline: var(--tabsdown-horizontal-padding);
 
   --tabsdown-accent: var(--tabsdown-accent-override, var(--secondary));
   --tabsdown-tab-background: var(--highlight);
@@ -21,6 +26,31 @@
   --tabsdown-tab-selected-color: var(--light);
   --tabsdown-tab-underline-color: var(--tabsdown-accent);
   --tabsdown-animation-duration: var(--tabsdown-animation-speed);
+  --tabsdown-tablist-justify: flex-start;
+  --tabsdown-tab-flex: 0 0 auto;
+  --tabsdown-tab-min-inline-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-white-space: normal;
+  --tabsdown-overflow-wrap: nowrap;
+  --tabsdown-overflow-x: auto;
+  --tabsdown-equal-width-flex: 1 0 0;
+  --tabsdown-equal-width-min-inline-size: max-content;
+  --tabsdown-equal-width-white-space: nowrap;
+  --tabsdown-side-tab-alignment: stretch;
+
+  --tabsdown-button-border-color: var(--tabsdown-tab-border);
+  --tabsdown-button-border-block-end-color: var(--tabsdown-tab-border);
+  --tabsdown-button-border-block-end-width: 1px;
+  --tabsdown-button-radius: var(--tabsdown-radius);
+  --tabsdown-button-background: var(--tabsdown-tab-background);
+  --tabsdown-button-color: var(--tabsdown-tab-color);
+  --tabsdown-button-hover-border-color: var(--tabsdown-tab-hover-border);
+  --tabsdown-button-hover-border-block-end-color: var(--tabsdown-tab-hover-border);
+  --tabsdown-button-hover-background: var(--tabsdown-tab-hover-background);
+  --tabsdown-button-hover-color: var(--tabsdown-tab-color);
+  --tabsdown-button-selected-border-color: var(--tabsdown-tab-selected-border);
+  --tabsdown-button-selected-border-block-end-color: var(--tabsdown-tab-selected-border);
+  --tabsdown-button-selected-background: var(--tabsdown-tab-selected-background);
+  --tabsdown-button-selected-color: var(--tabsdown-tab-selected-color);
 
   box-sizing: border-box;
   max-inline-size: 100%;
@@ -42,17 +72,25 @@
   border-radius: var(--tabsdown-radius);
 }
 
+.tabsdown.tabsdown-nested-style-flat .tabsdown {
+  margin-block: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+
 .tabsdown__tablist {
   display: flex;
   align-items: stretch;
-  justify-content: flex-start;
+  justify-content: var(--tabsdown-tablist-justify);
   box-sizing: border-box;
   inline-size: 100%;
   max-inline-size: 100%;
   min-inline-size: 0;
   margin-block-end: var(--tabsdown-content-spacing);
   gap: var(--tabsdown-gap);
-  overflow-x: auto;
+  flex-wrap: var(--tabsdown-overflow-wrap);
+  overflow-x: var(--tabsdown-overflow-x);
   overflow-y: hidden;
   overscroll-behavior-inline: contain;
   scroll-behavior: smooth;
@@ -63,6 +101,17 @@
 .tabsdown--multi > .tabsdown__tablist {
   flex-wrap: wrap;
   overflow-x: visible;
+}
+
+.tabsdown--inline-overflow.tabsdown--one > .tabsdown__tablist {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.tabsdown--inline-overflow.tabsdown--multi {
+  --tabsdown-equal-width-flex: 1 1 max-content;
+  --tabsdown-equal-width-min-inline-size: var(--tabsdown-tab-min-size);
+  --tabsdown-equal-width-white-space: normal;
 }
 
 /* Wrapping rather than a grid, because a grid column collapsed to zero width in
@@ -87,10 +136,21 @@
 .tabsdown--right > .tabsdown__tablist {
   flex: 0 0 auto;
   flex-direction: column;
-  inline-size: auto;
+  inline-size: var(--tabsdown-side-width);
+  max-inline-size: calc(
+    100% - var(--tabsdown-side-panel-min, 14rem) - var(--tabsdown-content-spacing)
+  );
   margin-block-end: 0;
+  align-items: var(--tabsdown-side-tab-alignment);
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.tabsdown--left > .tabsdown__tablist > .tabsdown__tab,
+.tabsdown--right > .tabsdown__tablist > .tabsdown__tab {
+  flex: 0 0 auto;
+  min-inline-size: var(--tabsdown-tab-min-size);
+  white-space: normal;
 }
 
 /* Reversing the axis rather than ordering the tab list. An order would put the
@@ -112,20 +172,24 @@
 }
 
 .tabsdown__tab {
-  flex: 0 0 auto;
+  flex: var(--tabsdown-tab-flex);
   box-sizing: border-box;
-  min-inline-size: var(--tabsdown-tab-min-size);
+  min-inline-size: var(--tabsdown-tab-min-inline-size);
   min-block-size: var(--tabsdown-tab-min-size);
   padding: var(--tabsdown-tab-padding-block) var(--tabsdown-tab-padding-inline);
-  border: 1px solid var(--tabsdown-tab-border);
-  border-radius: var(--tabsdown-radius);
-  background-color: var(--tabsdown-tab-background);
-  color: var(--tabsdown-tab-color);
+  border: 1px solid var(--tabsdown-button-border-color);
+  border-block-end-color: var(--tabsdown-button-border-block-end-color);
+  border-block-end-width: var(--tabsdown-button-border-block-end-width);
+  border-radius: var(--tabsdown-button-radius);
+  background-color: var(--tabsdown-button-background);
+  color: var(--tabsdown-button-color);
   font-family: var(--bodyFont);
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: inherit;
   line-height: 1.2;
   text-align: center;
+  white-space: var(--tabsdown-tab-white-space);
+  box-shadow: none;
   cursor: pointer;
   transition:
     background-color var(--tabsdown-animation-duration) ease,
@@ -134,17 +198,20 @@
 }
 
 .tabsdown__tab:hover {
-  border-color: var(--tabsdown-tab-hover-border);
-  background-color: var(--tabsdown-tab-hover-background);
+  border-color: var(--tabsdown-button-hover-border-color);
+  border-block-end-color: var(--tabsdown-button-hover-border-block-end-color);
+  background-color: var(--tabsdown-button-hover-background);
+  color: var(--tabsdown-button-hover-color);
 }
 
 .tabsdown__tab[aria-selected="true"],
 .tabsdown__tab[aria-selected="true"]:hover,
 .tabsdown__tab[aria-expanded="true"],
 .tabsdown__tab[aria-expanded="true"]:hover {
-  border-color: var(--tabsdown-tab-selected-border);
-  background-color: var(--tabsdown-tab-selected-background);
-  color: var(--tabsdown-tab-selected-color);
+  border-color: var(--tabsdown-button-selected-border-color);
+  border-block-end-color: var(--tabsdown-button-selected-border-block-end-color);
+  background-color: var(--tabsdown-button-selected-background);
+  color: var(--tabsdown-button-selected-color);
 }
 
 .tabsdown--collapsed > .tabsdown__tablist {
@@ -153,7 +220,10 @@
 
 .tabsdown__tab-icon {
   display: inline-flex;
-  margin-inline-end: 0.35em;
+  inline-size: var(--tabsdown-icon-size);
+  block-size: var(--tabsdown-icon-size);
+  margin-inline-end: var(--tabsdown-icon-spacing);
+  font-size: var(--tabsdown-icon-size);
   vertical-align: -0.15em;
 }
 
@@ -207,6 +277,218 @@
   font-weight: 600;
 }
 
+@mixin primary-palette {
+  --tabsdown-tab-background: var(--highlight);
+  --tabsdown-tab-border: var(--lightgray);
+  --tabsdown-tab-color: var(--darkgray);
+  --tabsdown-tab-hover-background: var(--lightgray);
+  --tabsdown-tab-hover-border: var(--gray);
+  --tabsdown-tab-selected-background: var(--tabsdown-accent);
+  --tabsdown-tab-selected-border: var(--tabsdown-accent);
+  --tabsdown-tab-selected-color: var(--light);
+  --tabsdown-tab-underline-color: var(--tabsdown-accent);
+}
+
+@mixin secondary-palette {
+  --tabsdown-tab-background: var(--lightgray);
+  --tabsdown-tab-border: var(--lightgray);
+  --tabsdown-tab-color: var(--gray);
+  --tabsdown-tab-hover-background: var(--highlight);
+  --tabsdown-tab-hover-border: var(--gray);
+  --tabsdown-tab-selected-background: var(--light);
+  --tabsdown-tab-selected-border: var(--gray);
+  --tabsdown-tab-selected-color: var(--dark);
+  --tabsdown-tab-underline-color: var(--dark);
+}
+
+.tabsdown.tabsdown-palette-primary {
+  @include primary-palette;
+}
+
+.tabsdown.tabsdown-palette-secondary {
+  @include secondary-palette;
+}
+
+@each $position in top, bottom, left, right {
+  .tabsdown--#{$position}.tabsdown-#{$position}-palette-primary {
+    @include primary-palette;
+  }
+
+  .tabsdown--#{$position}.tabsdown-#{$position}-palette-secondary {
+    @include secondary-palette;
+  }
+}
+
+.tabsdown.tabsdown-density-compact {
+  --tabsdown-tab-min-size: 32px;
+  --tabsdown-tab-padding-block: 0.375rem;
+}
+
+.tabsdown.tabsdown-density-default {
+  --tabsdown-tab-min-size: 44px;
+  --tabsdown-tab-padding-block: 0.5rem;
+}
+
+.tabsdown.tabsdown-overflow-scroll {
+  --tabsdown-overflow-wrap: nowrap;
+  --tabsdown-overflow-x: auto;
+  --tabsdown-equal-width-flex: 1 0 0;
+  --tabsdown-equal-width-min-inline-size: max-content;
+  --tabsdown-equal-width-white-space: nowrap;
+}
+
+.tabsdown.tabsdown-overflow-wrap {
+  --tabsdown-overflow-wrap: wrap;
+  --tabsdown-overflow-x: visible;
+  --tabsdown-equal-width-flex: 1 1 max-content;
+  --tabsdown-equal-width-min-inline-size: var(--tabsdown-tab-min-size);
+  --tabsdown-equal-width-white-space: normal;
+}
+
+@mixin alignment-start {
+  --tabsdown-tablist-justify: flex-start;
+  --tabsdown-tab-flex: 0 0 auto;
+  --tabsdown-tab-min-inline-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-white-space: normal;
+  --tabsdown-side-tab-alignment: flex-start;
+}
+
+@mixin alignment-center {
+  --tabsdown-tablist-justify: safe center;
+  --tabsdown-tab-flex: 0 0 auto;
+  --tabsdown-tab-min-inline-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-white-space: normal;
+  --tabsdown-side-tab-alignment: center;
+}
+
+@mixin alignment-equal-width {
+  --tabsdown-tablist-justify: flex-start;
+  --tabsdown-tab-flex: var(--tabsdown-equal-width-flex);
+  --tabsdown-tab-min-inline-size: var(--tabsdown-equal-width-min-inline-size);
+  --tabsdown-tab-white-space: var(--tabsdown-equal-width-white-space);
+  --tabsdown-side-tab-alignment: stretch;
+}
+
+.tabsdown.tabsdown-alignment-start {
+  @include alignment-start;
+}
+
+.tabsdown.tabsdown-alignment-center {
+  @include alignment-center;
+}
+
+.tabsdown.tabsdown-alignment-equal-width {
+  @include alignment-equal-width;
+}
+
+@each $position in top, bottom, left, right {
+  .tabsdown--#{$position}.tabsdown-#{$position}-alignment-start {
+    @include alignment-start;
+  }
+
+  .tabsdown--#{$position}.tabsdown-#{$position}-alignment-center {
+    @include alignment-center;
+  }
+
+  .tabsdown--#{$position}.tabsdown-#{$position}-alignment-equal-width {
+    @include alignment-equal-width;
+  }
+}
+
+@mixin button-personality {
+  --tabsdown-button-border-color: var(--tabsdown-tab-border);
+  --tabsdown-button-border-block-end-color: var(--tabsdown-tab-border);
+  --tabsdown-button-border-block-end-width: 1px;
+  --tabsdown-button-radius: var(--tabsdown-radius);
+  --tabsdown-button-background: var(--tabsdown-tab-background);
+  --tabsdown-button-color: var(--tabsdown-tab-color);
+  --tabsdown-button-hover-border-color: var(--tabsdown-tab-hover-border);
+  --tabsdown-button-hover-border-block-end-color: var(--tabsdown-tab-hover-border);
+  --tabsdown-button-hover-background: var(--tabsdown-tab-hover-background);
+  --tabsdown-button-hover-color: var(--tabsdown-tab-color);
+  --tabsdown-button-selected-border-color: var(--tabsdown-tab-selected-border);
+  --tabsdown-button-selected-border-block-end-color: var(--tabsdown-tab-selected-border);
+  --tabsdown-button-selected-background: var(--tabsdown-tab-selected-background);
+  --tabsdown-button-selected-color: var(--tabsdown-tab-selected-color);
+}
+
+@mixin underline-personality {
+  --tabsdown-button-border-color: transparent;
+  --tabsdown-button-border-block-end-color: transparent;
+  --tabsdown-button-border-block-end-width: var(--tabsdown-underline-thickness);
+  --tabsdown-button-radius: 0;
+  --tabsdown-button-background: transparent;
+  --tabsdown-button-color: var(--tabsdown-tab-color);
+  --tabsdown-button-hover-border-color: transparent;
+  --tabsdown-button-hover-border-block-end-color: var(--tabsdown-tab-hover-border);
+  --tabsdown-button-hover-background: transparent;
+  --tabsdown-button-hover-color: var(--dark);
+  --tabsdown-button-selected-border-color: transparent;
+  --tabsdown-button-selected-border-block-end-color: var(--tabsdown-tab-selected-border);
+  --tabsdown-button-selected-background: transparent;
+  --tabsdown-button-selected-color: var(--tabsdown-tab-underline-color);
+}
+
+.tabsdown.tabsdown-personality-default {
+  @include button-personality;
+}
+
+.tabsdown.tabsdown-personality-underline {
+  @include underline-personality;
+}
+
+@each $position in top, bottom, left, right {
+  .tabsdown--#{$position}.tabsdown-#{$position}-personality-button {
+    @include button-personality;
+  }
+
+  .tabsdown--#{$position}.tabsdown-#{$position}-personality-underline {
+    @include underline-personality;
+  }
+}
+
+.tabsdown.tabsdown-theme-button-outline > .tabsdown__tablist > .tabsdown__tab {
+  box-shadow: 0 0 0 1px var(--lightgray);
+}
+
+.tabsdown.tabsdown-selected-font-weight-medium
+  > .tabsdown__tablist
+  > .tabsdown__tab:is([aria-selected="true"], [aria-expanded="true"]) {
+  font-weight: 500;
+}
+
+.tabsdown.tabsdown-selected-font-weight-bold
+  > .tabsdown__tablist
+  > .tabsdown__tab:is([aria-selected="true"], [aria-expanded="true"]) {
+  font-weight: 700;
+}
+
+.tabsdown--nested-odd.tabsdown,
+.tabsdown--nested-even.tabsdown {
+  --tabsdown-tab-background: var(--lightgray);
+  --tabsdown-tab-border: var(--lightgray);
+  --tabsdown-tab-color: var(--gray);
+  --tabsdown-tab-hover-background: var(--highlight);
+  --tabsdown-tab-hover-border: var(--gray);
+  --tabsdown-tab-selected-background: var(--highlight);
+  --tabsdown-tab-selected-border: var(--gray);
+  --tabsdown-tab-selected-color: var(--dark);
+  --tabsdown-tab-underline-color: var(--dark);
+}
+
+.tabsdown.tabsdown-animations-disabled {
+  --tabsdown-animation-duration: 0ms;
+}
+
+.tabsdown.tabsdown-animations-disabled > .tabsdown__tablist {
+  scroll-behavior: auto;
+}
+
+.tabsdown.tabsdown-animations-disabled > .tabsdown__tablist > .tabsdown__tab,
+.tabsdown.tabsdown-animations-disabled > .tabsdown__panels {
+  transition: none;
+}
+
 .tabsdown__diagnostic {
   box-sizing: border-box;
   max-inline-size: 100%;
@@ -247,8 +529,17 @@
   .tabsdown--right > .tabsdown__tablist {
     flex-direction: row;
     inline-size: 100%;
+    max-inline-size: 100%;
+    --tabsdown-side-tab-alignment: stretch;
     overflow-x: auto;
     overflow-y: hidden;
+  }
+
+  .tabsdown--left > .tabsdown__tablist > .tabsdown__tab,
+  .tabsdown--right > .tabsdown__tablist > .tabsdown__tab {
+    flex: var(--tabsdown-tab-flex);
+    min-inline-size: var(--tabsdown-tab-min-inline-size);
+    white-space: var(--tabsdown-tab-white-space);
   }
 }
 
