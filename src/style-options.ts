@@ -425,6 +425,8 @@ const CSS_NAMED_COLORS = new Set(
   ).split(" "),
 );
 
+const HUE_COMPONENT_INDEX: Record<string, number> = { hsl: 0, hsla: 0, hwb: 0, lch: 2, oklch: 2 };
+
 function cssColorAt(value: unknown, path: string): string {
   if (typeof value !== "string") {
     fail(path, "expected a CSS color string");
@@ -436,19 +438,24 @@ function cssColorAt(value: unknown, path: string): string {
   }
 
   const hex = /^#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i;
-  const numeric = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:%|deg|grad|rad|turn)?$/i;
+  const numeric = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?$/;
+  const angular = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:deg|grad|rad|turn)$/i;
   const functional = /^(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch)\((.*)\)$/i.exec(color);
   let validFunction = false;
 
   if (functional) {
-    const name = functional[1]?.toLowerCase();
+    const name = functional[1]?.toLowerCase() ?? "";
     const body = functional[2]?.trim() ?? "";
+    const hueIndex = HUE_COMPONENT_INDEX[name] ?? -1;
+    const validComponent = (component: string, index: number) =>
+      numeric.test(component) || (index === hueIndex && angular.test(component));
+
     if (body.includes(",")) {
       const components = body.split(",").map((component) => component.trim());
       validFunction =
         (name === "rgb" || name === "rgba" || name === "hsl" || name === "hsla") &&
         (components.length === 3 || components.length === 4) &&
-        components.every((component) => numeric.test(component));
+        components.every(validComponent);
     } else {
       const slashParts = body.split("/").map((part) => part.trim());
       const components = slashParts[0]?.split(/\s+/) ?? [];
@@ -456,7 +463,7 @@ function cssColorAt(value: unknown, path: string): string {
       validFunction =
         slashParts.length <= 2 &&
         components.length === 3 &&
-        components.every((component) => numeric.test(component)) &&
+        components.every(validComponent) &&
         (alpha === undefined || numeric.test(alpha));
     }
   }

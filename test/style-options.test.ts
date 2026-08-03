@@ -132,13 +132,26 @@ describe("resolveTabsdownStyles", () => {
     "rgb(1)",
     "rgb(1 2 3 4)",
     "red\nblue",
+    "rgb(1deg 2deg 3deg)",
+    "hsl(120deg 30deg 40%)",
+    "hsl(120, 30%, 40%, 0.5deg)",
+    "oklch(62% 0.2deg 250)",
+    "lab(50% 20deg 30)",
   ])("rejects malformed or injection-like color %s", (accent) => {
     expect(() => resolveTabsdownStyles({ styles: { accent } })).toThrow("options.styles.accent");
   });
 
-  test.each(["#09f", "#0099ffaa", "rebeccapurple", "rgb(10 20 30 / 50%)", "hsl(120 30% 40%)"])(
-    "accepts safe CSS color %s",
-    (accent) => expect(resolveTabsdownStyles({ styles: { accent } }).accent).toBe(accent),
+  test.each([
+    "#09f",
+    "#0099ffaa",
+    "rebeccapurple",
+    "rgb(10 20 30 / 50%)",
+    "hsl(120 30% 40%)",
+    "hsl(120deg, 30%, 40%)",
+    "hwb(0.5turn 10% 20%)",
+    "oklch(62% 0.2 250deg)",
+  ])("accepts safe CSS color %s", (accent) =>
+    expect(resolveTabsdownStyles({ styles: { accent } }).accent).toBe(accent),
   );
 });
 
