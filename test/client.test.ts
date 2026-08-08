@@ -44,6 +44,20 @@ function rectangle(height: number): DOMRect {
   };
 }
 
+function box(left: number, top: number, width: number, height: number): DOMRect {
+  return {
+    bottom: top + height,
+    height,
+    left,
+    right: left + width,
+    top,
+    width,
+    x: left,
+    y: top,
+    toJSON: () => ({}),
+  };
+}
+
 function animationControls(options?: {
   duration?: string;
   wrapperHeights?: Map<HTMLElement, () => number>;
@@ -171,7 +185,61 @@ describe("client script", () => {
     expect(tabs().map((tab) => tab.getAttribute("aria-controls"))).toEqual(
       panels().map((panel) => panel.id),
     );
+    expect(tabs()[0]!.querySelector(".tabsdown__tab-reserve")?.getAttribute("aria-hidden")).toBe(
+      "true",
+    );
     expect(panels().every((panel) => panel.getAttribute("role") === "tabpanel")).toBe(true);
+  });
+
+  test("uses hidden DOM separators and follows ancestor style changes", async () => {
+    const tabList = document.querySelector<HTMLElement>(".tabsdown__tablist")!;
+    const buttons = tabs();
+    const separators = Array.from(
+      tabList.querySelectorAll<HTMLElement>(":scope > .tabsdown__separator"),
+    );
+    vi.spyOn(tabList, "getBoundingClientRect").mockReturnValue(box(0, 0, 100, 80));
+    vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(0, 0, 40, 20));
+    vi.spyOn(buttons[1]!, "getBoundingClientRect").mockReturnValue(box(44, 0, 40, 20));
+    vi.spyOn(buttons[2]!, "getBoundingClientRect").mockReturnValue(box(0, 28, 40, 20));
+
+    window.dispatchEvent(new Event("resize"));
+
+    expect(separators).toHaveLength(3);
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, false, true]);
+    expect(separators[1]!.getAttribute("aria-hidden")).toBe("true");
+    expect(separators[1]!.dataset.axis).toBe("inline");
+    expect([separators[1]!.style.left, separators[1]!.style.top]).toEqual(["42px", "10px"]);
+    expect(separators[1]!.style.getPropertyValue("--tabsdown-separator-length")).toBe("16px");
+
+    vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(60, 0, 40, 20));
+    vi.spyOn(buttons[1]!, "getBoundingClientRect").mockReturnValue(box(16, 0, 40, 20));
+    window.dispatchEvent(new Event("resize"));
+    expect(separators[1]!.style.left).toBe("58px");
+
+    const sheet = document.head.appendChild(document.createElement("style"));
+    sheet.textContent = "body.separator-column .tabsdown__tablist { flex-direction: column; }";
+    vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(0, 0, 40, 20));
+    vi.spyOn(buttons[1]!, "getBoundingClientRect").mockReturnValue(box(0, 24, 40, 20));
+    vi.spyOn(buttons[2]!, "getBoundingClientRect").mockReturnValue(box(44, 0, 40, 20));
+    document.body.classList.add("separator-column");
+    await Promise.resolve();
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, false, true]);
+    expect(separators[1]!.dataset.axis).toBe("block");
+    expect(separators[1]!.style.getPropertyValue("--tabsdown-separator-length")).toBe("32px");
+    document.body.classList.remove("separator-column");
+    sheet.remove();
+  });
+
+  test("ignores unrelated nested document mutations", async () => {
+    const unrelated = document.body.appendChild(document.createElement("div"));
+    const nested = unrelated.appendChild(document.createElement("div"));
+    await Promise.resolve();
+    const measure = vi.spyOn(tabs()[0]!, "getBoundingClientRect");
+    measure.mockClear();
+
+    nested.append(document.createElement("span"));
+    await Promise.resolve();
+    expect(measure).not.toHaveBeenCalled();
   });
 
   test("shows only the first panel", () => {
@@ -469,6 +537,92 @@ describe("client script", () => {
 });
 
 describe("public mountTabs bridge", () => {
+  test("formats labels safely and derives the group accessible name", () => {
+    const container = document.createElement("div");
+    const first = document.createElement("section");
+    const second = document.createElement("section");
+    container.append(first, second);
+    document.body.append(container);
+
+    const controller = window.tabsdown!.mountTabs(container, {
+      label: "**Trace** *details*",
+      tabs: [
+        { id: "first", label: "**Strong** *Em* ~~Gone~~ `Code`", panel: first },
+        { id: "second", label: "[link](https://example.test) <img src=x> ****", panel: second },
+      ],
+    });
+    const root = container.querySelector<HTMLElement>(".tabsdown--mounted")!;
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>(".tabsdown__tab"));
+
+    expect(root.querySelector(".tabsdown__tablist")?.getAttribute("aria-label")).toBe(
+      "Trace details",
+    );
+    expect(buttons[0]!.querySelector(".tabsdown__tab-label")?.innerHTML).toBe(
+      "<strong>Strong</strong> <em>Em</em> <del>Gone</del> <code>Code</code>",
+    );
+    expect(buttons[0]!.querySelector(".tabsdown__tab-reserve")?.innerHTML).toBe(
+      buttons[0]!.querySelector(".tabsdown__tab-label")?.innerHTML,
+    );
+    expect(buttons[0]!.querySelector(".tabsdown__tab-reserve")?.parentElement?.classList).toContain(
+      "tabsdown__tab-content",
+    );
+    expect(buttons[1]!.querySelector(".tabsdown__tab-label")?.textContent).toBe(
+      "[link](https://example.test) <img src=x> ****",
+    );
+    expect(root.querySelector("a, img, script")).toBeNull();
+
+    for (const tag of ["strong", "em", "del", "code"]) {
+      buttons[0]!.querySelector(tag)!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(controller.selection).toBe("first");
+      controller.setSelection(null);
+    }
+  });
+
+  test("keeps delimiter-only labels nonblank and duplicate derived names distinct by id", () => {
+    const container = document.createElement("div");
+    const first = document.createElement("section");
+    const second = document.createElement("section");
+    container.append(first, second);
+    document.body.append(container);
+
+    window.tabsdown!.mountTabs(container, {
+      label: "****",
+      tabs: [
+        { id: "raw", label: "A", panel: first },
+        { id: "formatted", label: "**A**", panel: second },
+      ],
+    });
+
+    const tabList = container.querySelector<HTMLElement>(".tabsdown__tablist")!;
+    expect(tabList.getAttribute("aria-label")).toBe("****");
+    expect(
+      Array.from(tabList.querySelectorAll(".tabsdown__tab-label"), (label) => label.textContent),
+    ).toEqual(["A", "A"]);
+  });
+
+  test("creates formatted controls in the target ownerDocument", () => {
+    const target = document.implementation.createHTMLDocument("pop-out");
+    const container = target.createElement("div");
+    const first = target.createElement("section");
+    const second = target.createElement("section");
+    container.append(first, second);
+    target.body.append(container);
+
+    window.tabsdown!.mountTabs(container, {
+      label: "**Pop-out** group",
+      tabs: [
+        { id: "first", label: "**First**", panel: first },
+        { id: "second", label: "`Second`", panel: second },
+      ],
+    });
+
+    const descendants = Array.from(container.querySelectorAll(".tabsdown--mounted *"));
+    expect(descendants.length).toBeGreaterThan(0);
+    expect(descendants.every((element) => element.ownerDocument === target)).toBe(true);
+    expect(container.querySelector("strong")?.textContent).toBe("First");
+    expect(container.querySelector("code")?.textContent).toBe("Second");
+  });
+
   test("mounts caller panels as an initially collapsed disclosure group", () => {
     const { buttons, controller, first, root, second } = callerTabs();
 
@@ -487,6 +641,63 @@ describe("public mountTabs bridge", () => {
     expect(buttons.some((button) => button.hasAttribute("role"))).toBe(false);
     expect([first.hidden, second.hidden]).toEqual([true, true]);
     expect(root.contains(first) && root.contains(second)).toBe(true);
+  });
+
+  test("refreshes mounted separators when availability changes and removes them on destroy", () => {
+    const mounted = callerTabs();
+    const tabList = mounted.root.querySelector<HTMLElement>(".tabsdown__tablist")!;
+    const separators = Array.from(
+      tabList.querySelectorAll<HTMLElement>(":scope > .tabsdown__separator"),
+    );
+    vi.spyOn(tabList, "getBoundingClientRect").mockReturnValue(box(0, 0, 100, 20));
+    vi.spyOn(mounted.buttons[0]!, "getBoundingClientRect").mockReturnValue(box(0, 0, 40, 20));
+    vi.spyOn(mounted.buttons[1]!, "getBoundingClientRect").mockReturnValue(box(44, 0, 40, 20));
+
+    window.dispatchEvent(new Event("resize"));
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, false]);
+
+    mounted.controller.setAvailable("first", false);
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, true]);
+
+    mounted.controller.setAvailable("first", true);
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, false]);
+
+    mounted.controller.destroy();
+    expect(separators.every((separator) => !separator.isConnected)).toBe(true);
+  });
+
+  test("reconnects separator ancestors after a detached mount is attached", async () => {
+    const container = document.createElement("div");
+    const first = container.appendChild(document.createElement("section"));
+    const second = container.appendChild(document.createElement("section"));
+    const controller = window.tabsdown!.mountTabs(container, {
+      label: "Detached panels",
+      tabs: [
+        { id: "first", label: "First", panel: first },
+        { id: "second", label: "Second", panel: second },
+      ],
+    });
+    const root = container.querySelector<HTMLElement>(":scope > .tabsdown--mounted")!;
+    const tabList = root.querySelector<HTMLElement>(":scope > .tabsdown__tablist")!;
+    const buttons = Array.from(tabList.querySelectorAll<HTMLButtonElement>(".tabsdown__tab"));
+    const separator = tabList.querySelectorAll<HTMLElement>(".tabsdown__separator")[1]!;
+    vi.spyOn(tabList, "getBoundingClientRect").mockReturnValue(box(0, 0, 100, 20));
+    vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(0, 0, 40, 20));
+    const secondBox = vi
+      .spyOn(buttons[1]!, "getBoundingClientRect")
+      .mockReturnValue(box(44, 0, 40, 20));
+    window.dispatchEvent(new Event("resize"));
+    expect(separator.style.left).toBe("42px");
+
+    document.body.append(container);
+    await Promise.resolve();
+    secondBox.mockReturnValue(box(60, 0, 40, 20));
+    document.body.classList.add("separator-layout-change");
+    await Promise.resolve();
+    expect(separator.style.left).toBe("50px");
+
+    document.body.classList.remove("separator-layout-change");
+    controller.destroy();
   });
 
   test("keeps nullable exclusive state and only notifies for user intent", () => {

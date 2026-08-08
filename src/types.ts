@@ -30,11 +30,13 @@ export {
   type TabsdownPositionPalette,
   type TabsdownPositionPersonality,
   type TabsdownPositionStyleOptions,
+  type ResolvedTabsdownSelectedFontWeight,
   type TabsdownSelectedFontWeight,
   type TabsdownSize,
   type TabsdownStyleOptions,
   type TabsdownStyleOptions as TabsdownStyles,
   type TabsdownStyleSettingContract,
+  type TabsdownUnderlinePlacement,
 } from "./style-options";
 
 export interface TabSpec {

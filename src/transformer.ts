@@ -3,7 +3,13 @@ import type { Parent, Root as MdastRoot, RootContent } from "mdast";
 import type { PluggableList, Plugin, Processor } from "unified";
 import type { QuartzTransformerPlugin } from "@quartz-community/types";
 import iconNodes from "lucide-static/icon-nodes.json";
-import { parseTabs, type ParsedTab, type TabConfiguration, type TabsDiagnostic } from "./parser";
+import {
+  parseInlineLabel,
+  parseTabs,
+  type ParsedTab,
+  type TabConfiguration,
+  type TabsDiagnostic,
+} from "./parser";
 import {
   resolveTabsdownStyles,
   tabsdownStyleClasses,
@@ -37,6 +43,28 @@ function element(
 
 function text(value: string): ElementContent {
   return { type: "text", value };
+}
+
+function labelNodes(label: string): ElementContent[] {
+  return parseInlineLabel(label).map((token) => {
+    if (token.type === "text") return text(token.text);
+    let tagName: "strong" | "em" | "del" | "code";
+    switch (token.type) {
+      case "strong":
+        tagName = "strong";
+        break;
+      case "emphasis":
+        tagName = "em";
+        break;
+      case "delete":
+        tagName = "del";
+        break;
+      case "code":
+        tagName = "code";
+        break;
+    }
+    return element(tagName, {}, [text(token.text)]);
+  });
 }
 
 function iconElement(name: string): ElementContent | undefined {
@@ -107,8 +135,18 @@ function tabButton(tab: ParsedTab, blockId: string, index: number): RootContent 
     },
     [],
     [
-      ...(icon ? [icon] : []),
-      element("span", { className: ["tabsdown__tab-label"] }, [text(tab.label)]),
+      element("span", { className: ["tabsdown__tab-content"] }, [
+        ...(icon ? [icon] : []),
+        element("span", { className: ["tabsdown__tab-label"] }, labelNodes(tab.label)),
+        element(
+          "span",
+          {
+            className: ["tabsdown__tab-reserve", ...(icon ? ["tabsdown__tab-reserve--icon"] : [])],
+            ariaHidden: "true",
+          },
+          labelNodes(tab.label),
+        ),
+      ]),
     ],
   );
 }
@@ -124,7 +162,7 @@ function panelNode(
     "div",
     { className: ["tabsdown__panel-label"] },
     [],
-    [text(tab.label)],
+    labelNodes(tab.label),
   );
   return synthetic(
     "tabsdownPanel",

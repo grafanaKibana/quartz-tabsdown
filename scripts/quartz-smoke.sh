@@ -34,7 +34,7 @@ title: Smoke
 ````tabsdown
 config: top, multi
 
-tab: icon:code Outer
+tab: icon:code **Outer**
 
 A [[target|wikilink]] and a ==highlight==.
 
@@ -46,7 +46,7 @@ tab: Inner A
 tab: Inner B
 ```
 
-tab: Second
+tab: [Second](https://example.test) <img src=x>
 ````
 NOTE
 
@@ -60,6 +60,7 @@ expect() {
     echo "  ok    $1"
   else
     echo "  FAIL  $1"
+    grep -o '<span class="tabsdown__tab-label">[^<]*</span>' "$html" | head -n 3 || true
     status=1
   fi
 }
@@ -77,6 +78,8 @@ expect "tab list rendered" 'class="tabsdown__tablist"'
 expect "panels rendered" 'class="tabsdown__panel"'
 expect "block config applied" 'tabsdown--top tabsdown--multi'
 expect "Lucide icon inlined" 'tabsdown__tab-icon'
+expect "bounded label formatting rendered" '<span class="tabsdown__tab-label"><strong>Outer</strong></span>'
+expect "unsupported label syntax stayed literal" '\[Second\](https://example.test) &lt;img src=x>'
 expect "nested block rendered" 'tabsdown--top tabsdown--one'
 expect "no-JS panel labels present" 'class="tabsdown__panel-label"'
 expect "styles injected" '.tabsdown__tablist'

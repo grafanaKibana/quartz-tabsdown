@@ -12,8 +12,17 @@
   --tabsdown-underline-thickness: 2px;
   --tabsdown-animation-speed: 160ms;
   --tabsdown-tab-min-size: 44px;
-  --tabsdown-tab-padding-block: 0.5rem;
+  --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
+  --tabsdown-density-tab-padding-block: 0.5rem;
+  --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
   --tabsdown-tab-padding-inline: var(--tabsdown-horizontal-padding);
+  --tabsdown-equal-wrap-basis: min(
+    100%,
+    max(
+      var(--tabsdown-tab-min-size),
+      calc(6em + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))
+    )
+  );
 
   --tabsdown-accent: var(--tabsdown-accent-override, var(--secondary));
   --tabsdown-tab-background: var(--highlight);
@@ -25,6 +34,7 @@
   --tabsdown-tab-selected-border: var(--tabsdown-accent);
   --tabsdown-tab-selected-color: var(--light);
   --tabsdown-tab-underline-color: var(--tabsdown-accent);
+  --tabsdown-rail-selected-background: var(--tabsdown-accent);
   --tabsdown-animation-duration: var(--tabsdown-animation-speed);
   --tabsdown-tablist-justify: flex-start;
   --tabsdown-tab-flex: 0 0 auto;
@@ -38,19 +48,27 @@
   --tabsdown-side-tab-alignment: stretch;
 
   --tabsdown-button-border-color: var(--tabsdown-tab-border);
-  --tabsdown-button-border-block-end-color: var(--tabsdown-tab-border);
-  --tabsdown-button-border-block-end-width: 1px;
+  --tabsdown-button-border-top-width: 1px;
+  --tabsdown-button-border-right-width: 1px;
+  --tabsdown-button-border-bottom-width: 1px;
+  --tabsdown-button-border-left-width: 1px;
   --tabsdown-button-radius: var(--tabsdown-radius);
   --tabsdown-button-background: var(--tabsdown-tab-background);
   --tabsdown-button-color: var(--tabsdown-tab-color);
   --tabsdown-button-hover-border-color: var(--tabsdown-tab-hover-border);
-  --tabsdown-button-hover-border-block-end-color: var(--tabsdown-tab-hover-border);
   --tabsdown-button-hover-background: var(--tabsdown-tab-hover-background);
   --tabsdown-button-hover-color: var(--tabsdown-tab-color);
   --tabsdown-button-selected-border-color: var(--tabsdown-tab-selected-border);
-  --tabsdown-button-selected-border-block-end-color: var(--tabsdown-tab-selected-border);
   --tabsdown-button-selected-background: var(--tabsdown-tab-selected-background);
   --tabsdown-button-selected-color: var(--tabsdown-tab-selected-color);
+  --tabsdown-tablist-background: transparent;
+  --tabsdown-tablist-radius: 0;
+  --tabsdown-tablist-padding: 0;
+  --tabsdown-underline-top-width: 0;
+  --tabsdown-underline-right-width: 0;
+  --tabsdown-underline-bottom-width: var(--tabsdown-underline-thickness);
+  --tabsdown-underline-left-width: 0;
+  --tabsdown-separator-width: 0;
 
   box-sizing: border-box;
   max-inline-size: 100%;
@@ -80,6 +98,7 @@
 }
 
 .tabsdown__tablist {
+  position: relative;
   display: flex;
   align-items: stretch;
   justify-content: var(--tabsdown-tablist-justify);
@@ -89,6 +108,9 @@
   min-inline-size: 0;
   margin-block-end: var(--tabsdown-content-spacing);
   gap: var(--tabsdown-gap);
+  padding: var(--tabsdown-tablist-padding);
+  border-radius: var(--tabsdown-tablist-radius);
+  background: var(--tabsdown-tablist-background);
   flex-wrap: var(--tabsdown-overflow-wrap);
   overflow-x: var(--tabsdown-overflow-x);
   overflow-y: hidden;
@@ -149,6 +171,7 @@
 .tabsdown--left > .tabsdown__tablist > .tabsdown__tab,
 .tabsdown--right > .tabsdown__tablist > .tabsdown__tab {
   flex: 0 0 auto;
+  inline-size: 100%;
   min-inline-size: var(--tabsdown-tab-min-size);
   white-space: normal;
 }
@@ -173,19 +196,21 @@
 
 .tabsdown__tab {
   flex: var(--tabsdown-tab-flex);
+  display: block;
   box-sizing: border-box;
   min-inline-size: var(--tabsdown-tab-min-inline-size);
-  min-block-size: var(--tabsdown-tab-min-size);
+  min-block-size: var(--tabsdown-tab-min-block-size);
   padding: var(--tabsdown-tab-padding-block) var(--tabsdown-tab-padding-inline);
-  border: 1px solid var(--tabsdown-button-border-color);
-  border-block-end-color: var(--tabsdown-button-border-block-end-color);
-  border-block-end-width: var(--tabsdown-button-border-block-end-width);
+  border-style: solid;
+  border-color: var(--tabsdown-button-border-color);
+  border-width: var(--tabsdown-button-border-top-width) var(--tabsdown-button-border-right-width)
+    var(--tabsdown-button-border-bottom-width) var(--tabsdown-button-border-left-width);
   border-radius: var(--tabsdown-button-radius);
   background-color: var(--tabsdown-button-background);
   color: var(--tabsdown-button-color);
   font-family: var(--bodyFont);
   font-size: 0.9rem;
-  font-weight: inherit;
+  font-weight: 400;
   line-height: 1.2;
   text-align: center;
   white-space: var(--tabsdown-tab-white-space);
@@ -197,9 +222,33 @@
     color var(--tabsdown-animation-duration) ease;
 }
 
+.tabsdown__tab[hidden] {
+  display: none;
+}
+
+.tabsdown__tab-content {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  vertical-align: middle;
+}
+
+.tabsdown__tab-reserve {
+  grid-area: 1 / 1 / 2 / -1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+  visibility: hidden;
+}
+
+.tabsdown__tab-reserve--icon {
+  padding-inline-start: calc(var(--tabsdown-icon-size) + var(--tabsdown-icon-spacing));
+}
+
 .tabsdown__tab:hover {
   border-color: var(--tabsdown-button-hover-border-color);
-  border-block-end-color: var(--tabsdown-button-hover-border-block-end-color);
   background-color: var(--tabsdown-button-hover-background);
   color: var(--tabsdown-button-hover-color);
 }
@@ -209,9 +258,36 @@
 .tabsdown__tab[aria-expanded="true"],
 .tabsdown__tab[aria-expanded="true"]:hover {
   border-color: var(--tabsdown-button-selected-border-color);
-  border-block-end-color: var(--tabsdown-button-selected-border-block-end-color);
   background-color: var(--tabsdown-button-selected-background);
   color: var(--tabsdown-button-selected-color);
+  font-weight: 600;
+}
+
+.tabsdown__separator {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  border-radius: 999px;
+  background: var(--tabsdown-tab-border);
+  font-family: var(--bodyFont);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.tabsdown__separator[hidden] {
+  display: none;
+}
+
+.tabsdown__separator[data-axis="inline"] {
+  inline-size: var(--tabsdown-separator-width);
+  block-size: var(--tabsdown-separator-length, 80%);
+  transform: translate(-50%, -50%);
+}
+
+.tabsdown__separator[data-axis="block"] {
+  inline-size: var(--tabsdown-separator-length, 80%);
+  block-size: var(--tabsdown-separator-width);
+  transform: translate(-50%, -50%);
 }
 
 .tabsdown--collapsed > .tabsdown__tablist {
@@ -219,12 +295,19 @@
 }
 
 .tabsdown__tab-icon {
+  grid-area: 1 / 1;
   display: inline-flex;
   inline-size: var(--tabsdown-icon-size);
   block-size: var(--tabsdown-icon-size);
   margin-inline-end: var(--tabsdown-icon-spacing);
   font-size: var(--tabsdown-icon-size);
   vertical-align: -0.15em;
+}
+
+.tabsdown__tab-label {
+  grid-area: 1 / 2;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .tabsdown__tab:focus-visible,
@@ -287,6 +370,7 @@
   --tabsdown-tab-selected-border: var(--tabsdown-accent);
   --tabsdown-tab-selected-color: var(--light);
   --tabsdown-tab-underline-color: var(--tabsdown-accent);
+  --tabsdown-rail-selected-background: var(--tabsdown-accent);
 }
 
 @mixin secondary-palette {
@@ -299,6 +383,7 @@
   --tabsdown-tab-selected-border: var(--gray);
   --tabsdown-tab-selected-color: var(--dark);
   --tabsdown-tab-underline-color: var(--dark);
+  --tabsdown-rail-selected-background: var(--highlight);
 }
 
 .tabsdown.tabsdown-palette-primary {
@@ -321,12 +406,12 @@
 
 .tabsdown.tabsdown-density-compact {
   --tabsdown-tab-min-size: 32px;
-  --tabsdown-tab-padding-block: 0.375rem;
+  --tabsdown-density-tab-padding-block: 0.375rem;
 }
 
 .tabsdown.tabsdown-density-default {
   --tabsdown-tab-min-size: 44px;
-  --tabsdown-tab-padding-block: 0.5rem;
+  --tabsdown-density-tab-padding-block: 0.5rem;
 }
 
 .tabsdown.tabsdown-overflow-scroll {
@@ -395,38 +480,116 @@
   }
 }
 
+.tabsdown:is(
+    .tabsdown-overflow-wrap:not(.tabsdown--inline-overflow),
+    .tabsdown--inline-overflow.tabsdown--multi
+  ):is(
+    .tabsdown--mounted.tabsdown-alignment-equal-width,
+    .tabsdown--top.tabsdown-alignment-equal-width:not(.tabsdown-top-alignment-start):not(
+        .tabsdown-top-alignment-center
+      ),
+    .tabsdown--top.tabsdown-top-alignment-equal-width,
+    .tabsdown--bottom.tabsdown-alignment-equal-width:not(.tabsdown-bottom-alignment-start):not(
+        .tabsdown-bottom-alignment-center
+      ),
+    .tabsdown--bottom.tabsdown-bottom-alignment-equal-width
+  )
+  > .tabsdown__tablist
+  > .tabsdown__tab {
+  flex: 1 1 var(--tabsdown-equal-wrap-basis);
+  min-inline-size: 0;
+}
+
 @mixin button-personality {
+  --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
+  --tabsdown-separator-width: 0;
   --tabsdown-button-border-color: var(--tabsdown-tab-border);
-  --tabsdown-button-border-block-end-color: var(--tabsdown-tab-border);
-  --tabsdown-button-border-block-end-width: 1px;
+  --tabsdown-button-border-top-width: 1px;
+  --tabsdown-button-border-right-width: 1px;
+  --tabsdown-button-border-bottom-width: 1px;
+  --tabsdown-button-border-left-width: 1px;
   --tabsdown-button-radius: var(--tabsdown-radius);
   --tabsdown-button-background: var(--tabsdown-tab-background);
   --tabsdown-button-color: var(--tabsdown-tab-color);
   --tabsdown-button-hover-border-color: var(--tabsdown-tab-hover-border);
-  --tabsdown-button-hover-border-block-end-color: var(--tabsdown-tab-hover-border);
   --tabsdown-button-hover-background: var(--tabsdown-tab-hover-background);
-  --tabsdown-button-hover-color: var(--tabsdown-tab-color);
+  --tabsdown-button-hover-color: var(--dark);
   --tabsdown-button-selected-border-color: var(--tabsdown-tab-selected-border);
-  --tabsdown-button-selected-border-block-end-color: var(--tabsdown-tab-selected-border);
   --tabsdown-button-selected-background: var(--tabsdown-tab-selected-background);
   --tabsdown-button-selected-color: var(--tabsdown-tab-selected-color);
+  --tabsdown-tablist-background: transparent;
+  --tabsdown-tablist-radius: 0;
+  --tabsdown-tablist-padding: 0;
 }
 
 @mixin underline-personality {
+  --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
+  --tabsdown-separator-width: 0;
   --tabsdown-button-border-color: transparent;
-  --tabsdown-button-border-block-end-color: transparent;
-  --tabsdown-button-border-block-end-width: var(--tabsdown-underline-thickness);
+  --tabsdown-button-border-top-width: var(--tabsdown-underline-top-width);
+  --tabsdown-button-border-right-width: var(--tabsdown-underline-right-width);
+  --tabsdown-button-border-bottom-width: var(--tabsdown-underline-bottom-width);
+  --tabsdown-button-border-left-width: var(--tabsdown-underline-left-width);
+  --tabsdown-button-radius: 0;
+  --tabsdown-button-background: transparent;
+  --tabsdown-button-color: var(--tabsdown-tab-color);
+  --tabsdown-button-hover-border-color: var(--tabsdown-tab-hover-border);
+  --tabsdown-button-hover-background: transparent;
+  --tabsdown-button-hover-color: var(--dark);
+  --tabsdown-button-selected-border-color: var(--tabsdown-tab-selected-border);
+  --tabsdown-button-selected-background: transparent;
+  --tabsdown-button-selected-color: var(--tabsdown-tab-underline-color);
+  --tabsdown-tablist-background: transparent;
+  --tabsdown-tablist-radius: 0;
+  --tabsdown-tablist-padding: 0;
+}
+
+@mixin separator-personality {
+  --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
+  --tabsdown-separator-width: 1px;
+  --tabsdown-button-border-color: transparent;
+  --tabsdown-button-border-top-width: 0;
+  --tabsdown-button-border-right-width: 0;
+  --tabsdown-button-border-bottom-width: 0;
+  --tabsdown-button-border-left-width: 0;
   --tabsdown-button-radius: 0;
   --tabsdown-button-background: transparent;
   --tabsdown-button-color: var(--tabsdown-tab-color);
   --tabsdown-button-hover-border-color: transparent;
-  --tabsdown-button-hover-border-block-end-color: var(--tabsdown-tab-hover-border);
   --tabsdown-button-hover-background: transparent;
   --tabsdown-button-hover-color: var(--dark);
   --tabsdown-button-selected-border-color: transparent;
-  --tabsdown-button-selected-border-block-end-color: var(--tabsdown-tab-selected-border);
   --tabsdown-button-selected-background: transparent;
   --tabsdown-button-selected-color: var(--tabsdown-tab-underline-color);
+  --tabsdown-tablist-background: transparent;
+  --tabsdown-tablist-radius: 0;
+  --tabsdown-tablist-padding: 0;
+}
+
+@mixin rail-personality {
+  --tabsdown-tab-min-block-size: 36px;
+  --tabsdown-separator-width: 0;
+  --tabsdown-button-border-color: transparent;
+  --tabsdown-button-border-top-width: 0;
+  --tabsdown-button-border-right-width: 0;
+  --tabsdown-button-border-bottom-width: 0;
+  --tabsdown-button-border-left-width: 0;
+  --tabsdown-button-radius: calc(var(--tabsdown-radius) * 0.75);
+  --tabsdown-button-background: transparent;
+  --tabsdown-button-color: var(--tabsdown-tab-color);
+  --tabsdown-button-hover-border-color: transparent;
+  --tabsdown-button-hover-background: transparent;
+  --tabsdown-button-hover-color: var(--dark);
+  --tabsdown-button-selected-border-color: transparent;
+  --tabsdown-button-selected-background: var(--tabsdown-rail-selected-background);
+  --tabsdown-button-selected-color: var(--tabsdown-tab-selected-color);
+  --tabsdown-tablist-background: var(--lightgray);
+  --tabsdown-tablist-radius: var(--tabsdown-radius);
+  --tabsdown-tab-padding-block: 0.125rem;
+  --tabsdown-tablist-padding: 0.375rem;
 }
 
 .tabsdown.tabsdown-personality-default {
@@ -437,6 +600,14 @@
   @include underline-personality;
 }
 
+.tabsdown.tabsdown-personality-separator {
+  @include separator-personality;
+}
+
+.tabsdown.tabsdown-personality-rail {
+  @include rail-personality;
+}
+
 @each $position in top, bottom, left, right {
   .tabsdown--#{$position}.tabsdown-#{$position}-personality-button {
     @include button-personality;
@@ -445,24 +616,69 @@
   .tabsdown--#{$position}.tabsdown-#{$position}-personality-underline {
     @include underline-personality;
   }
+
+  .tabsdown--#{$position}.tabsdown-#{$position}-personality-separator {
+    @include separator-personality;
+  }
+
+  .tabsdown--#{$position}.tabsdown-#{$position}-personality-rail {
+    @include rail-personality;
+  }
+}
+
+.tabsdown.tabsdown-underline-placement-top {
+  --tabsdown-underline-top-width: var(--tabsdown-underline-thickness);
+  --tabsdown-underline-right-width: 0;
+  --tabsdown-underline-bottom-width: 0;
+  --tabsdown-underline-left-width: 0;
+}
+
+.tabsdown.tabsdown-underline-placement-right,
+.tabsdown--left.tabsdown-underline-placement-auto {
+  --tabsdown-underline-top-width: 0;
+  --tabsdown-underline-right-width: var(--tabsdown-underline-thickness);
+  --tabsdown-underline-bottom-width: 0;
+  --tabsdown-underline-left-width: 0;
+}
+
+.tabsdown.tabsdown-underline-placement-bottom {
+  --tabsdown-underline-top-width: 0;
+  --tabsdown-underline-right-width: 0;
+  --tabsdown-underline-bottom-width: var(--tabsdown-underline-thickness);
+  --tabsdown-underline-left-width: 0;
+}
+
+.tabsdown.tabsdown-underline-placement-left,
+.tabsdown--right.tabsdown-underline-placement-auto {
+  --tabsdown-underline-top-width: 0;
+  --tabsdown-underline-right-width: 0;
+  --tabsdown-underline-bottom-width: 0;
+  --tabsdown-underline-left-width: var(--tabsdown-underline-thickness);
 }
 
 .tabsdown.tabsdown-theme-button-outline > .tabsdown__tablist > .tabsdown__tab {
   box-shadow: 0 0 0 1px var(--lightgray);
 }
 
-.tabsdown.tabsdown-selected-font-weight-medium
+.tabsdown.tabsdown-selected-font-weight-thinner
   > .tabsdown__tablist
   > .tabsdown__tab:is([aria-selected="true"], [aria-expanded="true"]) {
-  font-weight: 500;
+  font-weight: 400;
 }
 
-.tabsdown.tabsdown-selected-font-weight-bold
+.tabsdown.tabsdown-selected-font-weight-default
+  > .tabsdown__tablist
+  > .tabsdown__tab:is([aria-selected="true"], [aria-expanded="true"]) {
+  font-weight: 600;
+}
+
+.tabsdown.tabsdown-selected-font-weight-bolder
   > .tabsdown__tablist
   > .tabsdown__tab:is([aria-selected="true"], [aria-expanded="true"]) {
   font-weight: 700;
 }
 
+/* Keep nested surfaces quiet without replacing palette-owned selection accents. */
 .tabsdown--nested-odd.tabsdown,
 .tabsdown--nested-even.tabsdown {
   --tabsdown-tab-background: var(--lightgray);
@@ -473,7 +689,6 @@
   --tabsdown-tab-selected-background: var(--highlight);
   --tabsdown-tab-selected-border: var(--gray);
   --tabsdown-tab-selected-color: var(--dark);
-  --tabsdown-tab-underline-color: var(--dark);
 }
 
 .tabsdown.tabsdown-animations-disabled {
@@ -537,9 +752,63 @@
 
   .tabsdown--left > .tabsdown__tablist > .tabsdown__tab,
   .tabsdown--right > .tabsdown__tablist > .tabsdown__tab {
-    flex: var(--tabsdown-tab-flex);
-    min-inline-size: var(--tabsdown-tab-min-inline-size);
-    white-space: var(--tabsdown-tab-white-space);
+    flex: 1 1 0;
+    inline-size: auto;
+    min-inline-size: var(--tabsdown-tab-min-size);
+    white-space: normal;
+  }
+
+  .tabsdown:is(
+      .tabsdown-overflow-wrap:not(.tabsdown--inline-overflow),
+      .tabsdown--inline-overflow.tabsdown--multi
+    ):is(
+      .tabsdown--left.tabsdown-alignment-equal-width:not(.tabsdown-left-alignment-start):not(
+          .tabsdown-left-alignment-center
+        ),
+      .tabsdown--left.tabsdown-left-alignment-equal-width,
+      .tabsdown--right.tabsdown-alignment-equal-width:not(.tabsdown-right-alignment-start):not(
+          .tabsdown-right-alignment-center
+        ),
+      .tabsdown--right.tabsdown-right-alignment-equal-width
+    )
+    > .tabsdown__tablist
+    > .tabsdown__tab {
+    flex: 1 1 var(--tabsdown-equal-wrap-basis);
+    inline-size: auto;
+    min-inline-size: 0;
+  }
+}
+
+@media (any-pointer: coarse) {
+  .tabsdown.tabsdown-personality-rail,
+  .tabsdown--top.tabsdown-top-personality-rail,
+  .tabsdown--bottom.tabsdown-bottom-personality-rail,
+  .tabsdown--left.tabsdown-left-personality-rail,
+  .tabsdown--right.tabsdown-right-personality-rail {
+    --tabsdown-tab-min-block-size: 44px;
+  }
+
+  .tabsdown--top:is(
+    .tabsdown-top-personality-button,
+    .tabsdown-top-personality-underline,
+    .tabsdown-top-personality-separator
+  ),
+  .tabsdown--bottom:is(
+    .tabsdown-bottom-personality-button,
+    .tabsdown-bottom-personality-underline,
+    .tabsdown-bottom-personality-separator
+  ),
+  .tabsdown--left:is(
+    .tabsdown-left-personality-button,
+    .tabsdown-left-personality-underline,
+    .tabsdown-left-personality-separator
+  ),
+  .tabsdown--right:is(
+    .tabsdown-right-personality-button,
+    .tabsdown-right-personality-underline,
+    .tabsdown-right-personality-separator
+  ) {
+    --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
   }
 }
 

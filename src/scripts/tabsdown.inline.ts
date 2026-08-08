@@ -1,4 +1,5 @@
 import type { MountTabsOptions, TabsController } from "../types";
+import { inlineLabelText, parseInlineLabel, type InlineLabelToken } from "../parser";
 
 const configuredStyleClasses = "__TABSDOWN_STYLE_CLASSES__";
 const styleClasses = configuredStyleClasses.startsWith("__")
@@ -15,6 +16,115 @@ function panelsOf(root: HTMLElement): HTMLElement[] {
   return Array.from(
     root.querySelectorAll<HTMLElement>(":scope > .tabsdown__panels > .tabsdown__panel"),
   );
+}
+
+interface SeparatorOperation {
+  refresh: () => void;
+  destroy: () => void;
+}
+
+const separatorOperations = new Set<SeparatorOperation>();
+
+function setupSeparators(root: HTMLElement): SeparatorOperation {
+  const tabList = root.querySelector<HTMLElement>(":scope > .tabsdown__tablist")!;
+  const tabs = tabsOf(root);
+  const document = root.ownerDocument;
+  const view = document.defaultView;
+  const separators = tabs.map(() => {
+    const separator = document.createElement("span");
+    separator.className = "tabsdown__separator";
+    separator.setAttribute("aria-hidden", "true");
+    separator.hidden = true;
+    tabList.append(separator);
+    return separator;
+  });
+  const sameLane = (previous: DOMRect, current: DOMRect, column: boolean): boolean =>
+    column
+      ? Math.min(previous.right, current.right) - Math.max(previous.left, current.left) > 1
+      : Math.min(previous.bottom, current.bottom) - Math.max(previous.top, current.top) > 1;
+  const refresh = (): void => {
+    const column = view?.getComputedStyle(tabList).flexDirection.startsWith("column") ?? false;
+    const listRect = tabList.getBoundingClientRect();
+    let previous: DOMRect | undefined;
+    tabs.forEach((tab, index) => {
+      const separator = separators[index]!;
+      if (tab.hidden) {
+        separator.hidden = true;
+        return;
+      }
+      const current = tab.getBoundingClientRect();
+      if (!previous || !sameLane(previous, current, column)) {
+        separator.hidden = true;
+      } else {
+        separator.hidden = false;
+        separator.dataset.axis = column ? "block" : "inline";
+        separator.style.setProperty(
+          "--tabsdown-separator-length",
+          `${(column ? current.width : current.height) * 0.8}px`,
+        );
+        const inlineMiddle =
+          current.left >= previous.right
+            ? (previous.right + current.left) / 2
+            : (previous.left + current.right) / 2;
+        separator.style.left = `${
+          (column ? (current.left + current.right) / 2 : inlineMiddle) -
+          listRect.left +
+          tabList.scrollLeft
+        }px`;
+        separator.style.top = `${
+          (column ? (previous.bottom + current.top) / 2 : (current.top + current.bottom) / 2) -
+          listRect.top +
+          tabList.scrollTop
+        }px`;
+      }
+      previous = current;
+    });
+  };
+  const observer = view?.ResizeObserver ? new view.ResizeObserver(refresh) : undefined;
+  observer?.observe(tabList);
+  tabs.forEach((tab) => observer?.observe(tab));
+  let mutations: MutationObserver | undefined;
+  if (view?.MutationObserver) {
+    const observeAncestors = (): void => {
+      mutations?.disconnect();
+      if (!tabList.isConnected) {
+        mutations?.observe(document as unknown as Node, { childList: true, subtree: true });
+      }
+      for (let node: Node | null = tabList; node;) {
+        mutations?.observe(node, {
+          childList: true,
+          ...(node.nodeType === 1
+            ? {
+                attributes: true,
+                attributeFilter: ["class", "style", "dir"],
+              }
+            : {}),
+        });
+        node = node.parentNode ?? ("host" in node ? (node as ShadowRoot).host : null);
+      }
+    };
+    mutations = new view.MutationObserver(() => {
+      observeAncestors();
+      refresh();
+    });
+    observeAncestors();
+  }
+  tabList.addEventListener("scroll", refresh);
+  view?.addEventListener("resize", refresh);
+  const operation: SeparatorOperation = {
+    refresh,
+    destroy: () => {
+      observer?.disconnect();
+      mutations?.disconnect();
+      tabList.removeEventListener("scroll", refresh);
+      view?.removeEventListener("resize", refresh);
+      separators.forEach((separator) => separator.remove());
+      separatorOperations.delete(operation);
+    },
+  };
+  separatorOperations.add(operation);
+  refresh();
+  return operation;
 }
 
 interface HeightOperation {
@@ -43,6 +153,34 @@ const genericPanelTags = new Set(["DIV", "SPAN", "PRE"]);
 const focusableSelector =
   'a[href], audio[controls], button:not([disabled]), details, iframe, input:not([disabled]):not([type="hidden"]), select:not([disabled]), summary, textarea:not([disabled]), video[controls], [contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex="-1"]):not([disabled])';
 let nextMountId = 0;
+
+function renderInlineLabel(parent: HTMLElement, tokens: readonly InlineLabelToken[]): void {
+  const document = parent.ownerDocument;
+  for (const token of tokens) {
+    if (token.type === "text") {
+      parent.append(document.createTextNode(token.text));
+      continue;
+    }
+    let tagName: "strong" | "em" | "del" | "code";
+    switch (token.type) {
+      case "strong":
+        tagName = "strong";
+        break;
+      case "emphasis":
+        tagName = "em";
+        break;
+      case "delete":
+        tagName = "del";
+        break;
+      case "code":
+        tagName = "code";
+        break;
+    }
+    const element = document.createElement(tagName);
+    element.textContent = token.text;
+    parent.append(element);
+  }
+}
 
 function isShadowIncludingAncestor(ancestor: Node, node: Node): boolean {
   let current: Node | null = node;
@@ -234,6 +372,9 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
   if (new Set(options.tabs.map((tab) => tab.panel)).size !== options.tabs.length) {
     throw new Error("Tabsdown: mountTabs panel elements must be unique.");
   }
+
+  const groupLabel = inlineLabelText(parseInlineLabel(options.label));
+  const tabLabels = options.tabs.map((tab) => parseInlineLabel(tab.label));
   if (
     options.tabs.some((tab, index) =>
       options.tabs.some(
@@ -316,7 +457,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
   const tabList = ownerDocument.createElement("div");
   tabList.className = "tabsdown__tablist";
   tabList.setAttribute("role", "group");
-  tabList.setAttribute("aria-label", options.label);
+  tabList.setAttribute("aria-label", groupLabel);
   const panelsElement = ownerDocument.createElement("div");
   panelsElement.className = "tabsdown__panels";
 
@@ -333,10 +474,18 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
     button.type = "button";
     button.id = buttonId;
     button.className = "tabsdown__tab";
+    const content = ownerDocument.createElement("span");
+    content.className = "tabsdown__tab-content";
+    button.append(content);
     const label = ownerDocument.createElement("span");
     label.className = "tabsdown__tab-label";
-    label.textContent = tab.label;
-    button.append(label);
+    renderInlineLabel(label, tabLabels[index] ?? []);
+    content.append(label);
+    const reserve = ownerDocument.createElement("span");
+    reserve.className = "tabsdown__tab-reserve";
+    reserve.setAttribute("aria-hidden", "true");
+    renderInlineLabel(reserve, tabLabels[index] ?? []);
+    content.append(reserve);
     tabList.append(button);
 
     const restore = new Map<string, string | null>(
@@ -368,6 +517,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
 
   root.append(tabList, panelsElement);
   container.append(root);
+  const separators = setupSeparators(root);
 
   let selection: string | null = null;
   let notifying = false;
@@ -382,6 +532,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
       tab.panel.hidden = !active;
     });
     root.classList.toggle("tabsdown--collapsed", selection === null);
+    separators.refresh();
   };
   const commit = (next: string | null, notify: boolean): void => {
     const previous = selection;
@@ -451,7 +602,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
       if (!tab || tab.available === available) return;
       tab.available = available;
       if (available) {
-        tab.button.hidden = false;
+        applyState();
         return;
       }
       if (activeElementNear(tab.button) === tab.button) {
@@ -477,6 +628,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
           (active, index) => active && isShadowIncludingAncestor(mountedTabs[index]!.panel, active),
         );
       heightOperations.get(panelsElement)?.cleanup();
+      separators.destroy();
       tabList.removeEventListener("click", onPublicClick);
       mountedTabs.forEach((tab) => {
         mountedPanels.delete(tab.panel);
@@ -554,6 +706,7 @@ function setup(root: HTMLElement): void {
   });
 
   root.dataset.tabsdown = "interactive";
+  setupSeparators(root);
   select(root, 0, false, false);
 }
 
@@ -623,6 +776,7 @@ document.addEventListener("nav", () => {
     Array.from(publicControllers).forEach((controller) => controller.destroy());
     Array.from(heightOperations.values()).forEach((operation) => operation.cleanup());
     heightOperations.clear();
+    Array.from(separatorOperations).forEach((operation) => operation.destroy());
     document.removeEventListener("click", onClick);
     document.removeEventListener("keydown", onKeyDown);
   });

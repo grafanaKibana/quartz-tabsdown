@@ -1,12 +1,15 @@
 export type TabsdownSize = "compact" | "default";
-export type TabsdownPersonality = "default" | "underline";
+export type TabsdownPersonality = "default" | "underline" | "separator" | "rail";
+export type TabsdownUnderlinePlacement = "auto" | "top" | "right" | "bottom" | "left";
 export type TabsdownOverflow = "scroll" | "wrap";
 export type TabsdownPalette = "primary" | "secondary";
 export type TabsdownAlignment = "start" | "center" | "equal-width";
-export type TabsdownSelectedFontWeight = "theme-default" | "medium" | "bold";
+export type ResolvedTabsdownSelectedFontWeight = "thinner" | "default" | "bolder";
+export type TabsdownSelectedFontWeight =
+  ResolvedTabsdownSelectedFontWeight | "theme-default" | "medium" | "bold";
 export type TabsdownNestedStyle = "card" | "flat";
 export type TabsdownPosition = "top" | "bottom" | "left" | "right";
-export type TabsdownPositionPersonality = "inherit" | "button" | "underline";
+export type TabsdownPositionPersonality = "inherit" | "button" | "underline" | "separator" | "rail";
 export type TabsdownPositionPalette = "inherit" | TabsdownPalette;
 export type TabsdownPositionAlignment = "inherit" | TabsdownAlignment;
 
@@ -18,6 +21,7 @@ export interface TabsdownGlobalStyleOptions {
   accent?: string | null;
   alignment?: TabsdownAlignment;
   themeButtonOutline?: boolean;
+  underlinePlacement?: TabsdownUnderlinePlacement;
   underlineThickness?: number;
   gap?: number;
   radius?: number;
@@ -95,7 +99,12 @@ export const STYLE_SETTINGS_CONTRACT = [
     id: "tabsdown-personality",
     type: "class-select",
     default: "tabsdown-personality-default",
-    enums: ["tabsdown-personality-default", "tabsdown-personality-underline"],
+    enums: [
+      "tabsdown-personality-default",
+      "tabsdown-personality-underline",
+      "tabsdown-personality-separator",
+      "tabsdown-personality-rail",
+    ],
   },
   {
     path: "overflow",
@@ -128,6 +137,19 @@ export const STYLE_SETTINGS_CONTRACT = [
     id: "tabsdown-theme-button-outline",
     type: "class-toggle",
     default: false,
+  },
+  {
+    path: "underlinePlacement",
+    id: "tabsdown-underline-placement",
+    type: "class-select",
+    default: "tabsdown-underline-placement-auto",
+    enums: [
+      "tabsdown-underline-placement-auto",
+      "tabsdown-underline-placement-top",
+      "tabsdown-underline-placement-right",
+      "tabsdown-underline-placement-bottom",
+      "tabsdown-underline-placement-left",
+    ],
   },
   {
     path: "underlineThickness",
@@ -213,11 +235,11 @@ export const STYLE_SETTINGS_CONTRACT = [
     path: "selectedFontWeight",
     id: "tabsdown-selected-font-weight",
     type: "class-select",
-    default: "tabsdown-selected-font-weight-theme-default",
+    default: "tabsdown-selected-font-weight-default",
     enums: [
-      "tabsdown-selected-font-weight-theme-default",
-      "tabsdown-selected-font-weight-medium",
-      "tabsdown-selected-font-weight-bold",
+      "tabsdown-selected-font-weight-thinner",
+      "tabsdown-selected-font-weight-default",
+      "tabsdown-selected-font-weight-bolder",
     ],
   },
   {
@@ -237,6 +259,8 @@ export const STYLE_SETTINGS_CONTRACT = [
         `tabsdown-${position}-personality-inherit`,
         `tabsdown-${position}-personality-button`,
         `tabsdown-${position}-personality-underline`,
+        `tabsdown-${position}-personality-separator`,
+        `tabsdown-${position}-personality-rail`,
       ],
     },
     {
@@ -289,6 +313,7 @@ export interface ResolvedTabsdownGlobalStyles {
   accent: string | null;
   alignment: TabsdownAlignment;
   themeButtonOutline: boolean;
+  underlinePlacement: TabsdownUnderlinePlacement;
   underlineThickness: number;
   gap: number;
   radius: number;
@@ -297,7 +322,7 @@ export interface ResolvedTabsdownGlobalStyles {
   sideWidth: number;
   iconSize: number;
   iconSpacing: number;
-  selectedFontWeight: TabsdownSelectedFontWeight;
+  selectedFontWeight: ResolvedTabsdownSelectedFontWeight;
   nestedStyle: TabsdownNestedStyle;
 }
 
@@ -325,6 +350,7 @@ const GLOBAL_DEFAULTS: ResolvedTabsdownGlobalStyles = {
   accent: null,
   alignment: "start",
   themeButtonOutline: false,
+  underlinePlacement: "auto",
   underlineThickness: 2,
   gap: 4,
   radius: 4,
@@ -333,7 +359,7 @@ const GLOBAL_DEFAULTS: ResolvedTabsdownGlobalStyles = {
   sideWidth: 192,
   iconSize: 16,
   iconSpacing: 6,
-  selectedFontWeight: "theme-default",
+  selectedFontWeight: "default",
   nestedStyle: "card",
 };
 
@@ -490,6 +516,7 @@ const globalKeys = [
   "accent",
   "alignment",
   "themeButtonOutline",
+  "underlinePlacement",
   "underlineThickness",
   "gap",
   "radius",
@@ -510,7 +537,12 @@ function resolveGlobals(value: unknown, path: string): ResolvedTabsdownGlobalSty
   if (input.size !== undefined)
     result.size = enumAt(input.size, `${path}.size`, ["compact", "default"]);
   if (input.personality !== undefined)
-    result.personality = enumAt(input.personality, `${path}.personality`, ["default", "underline"]);
+    result.personality = enumAt(input.personality, `${path}.personality`, [
+      "default",
+      "underline",
+      "separator",
+      "rail",
+    ]);
   if (input.overflow !== undefined)
     result.overflow = enumAt(input.overflow, `${path}.overflow`, ["scroll", "wrap"]);
   if (input.palette !== undefined)
@@ -525,6 +557,14 @@ function resolveGlobals(value: unknown, path: string): ResolvedTabsdownGlobalSty
     ]);
   if (input.themeButtonOutline !== undefined)
     result.themeButtonOutline = booleanAt(input.themeButtonOutline, `${path}.themeButtonOutline`);
+  if (input.underlinePlacement !== undefined)
+    result.underlinePlacement = enumAt(input.underlinePlacement, `${path}.underlinePlacement`, [
+      "auto",
+      "top",
+      "right",
+      "bottom",
+      "left",
+    ]);
   if (input.underlineThickness !== undefined)
     result.underlineThickness = numberAt(input.underlineThickness, `${path}.underlineThickness`, {
       min: 1,
@@ -561,12 +601,18 @@ function resolveGlobals(value: unknown, path: string): ResolvedTabsdownGlobalSty
       max: 16,
       step: 1,
     });
-  if (input.selectedFontWeight !== undefined)
-    result.selectedFontWeight = enumAt(input.selectedFontWeight, `${path}.selectedFontWeight`, [
-      "theme-default",
-      "medium",
-      "bold",
+  if (input.selectedFontWeight !== undefined) {
+    const legacy = { "theme-default": "default", medium: "default", bold: "bolder" } as const;
+    const weight =
+      typeof input.selectedFontWeight === "string" && input.selectedFontWeight in legacy
+        ? legacy[input.selectedFontWeight as keyof typeof legacy]
+        : input.selectedFontWeight;
+    result.selectedFontWeight = enumAt(weight, `${path}.selectedFontWeight`, [
+      "thinner",
+      "default",
+      "bolder",
     ]);
+  }
   if (input.nestedStyle !== undefined)
     result.nestedStyle = enumAt(input.nestedStyle, `${path}.nestedStyle`, ["card", "flat"]);
 
@@ -580,7 +626,13 @@ function resolvePosition(value: unknown, path: string): ResolvedTabsdownPosition
     personality:
       input.personality === undefined
         ? POSITION_DEFAULTS.personality
-        : enumAt(input.personality, `${path}.personality`, ["inherit", "button", "underline"]),
+        : enumAt(input.personality, `${path}.personality`, [
+            "inherit",
+            "button",
+            "underline",
+            "separator",
+            "rail",
+          ]),
     palette:
       input.palette === undefined
         ? POSITION_DEFAULTS.palette
@@ -660,6 +712,7 @@ export function tabsdownStyleClasses(styles: ResolvedTabsdownStyles): string[] {
   const classes = [
     `tabsdown-density-${styles.size}`,
     `tabsdown-personality-${styles.personality}`,
+    `tabsdown-underline-placement-${styles.underlinePlacement}`,
     `tabsdown-overflow-${styles.overflow}`,
     `tabsdown-palette-${styles.palette}`,
     `tabsdown-alignment-${styles.alignment}`,
