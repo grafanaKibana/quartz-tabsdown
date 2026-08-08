@@ -651,6 +651,40 @@ describe("public mountTabs bridge", () => {
     expect(separators.every((separator) => !separator.isConnected)).toBe(true);
   });
 
+  test("reconnects separator ancestors after a detached mount is attached", async () => {
+    const container = document.createElement("div");
+    const first = container.appendChild(document.createElement("section"));
+    const second = container.appendChild(document.createElement("section"));
+    const controller = window.tabsdown!.mountTabs(container, {
+      label: "Detached panels",
+      tabs: [
+        { id: "first", label: "First", panel: first },
+        { id: "second", label: "Second", panel: second },
+      ],
+    });
+    const root = container.querySelector<HTMLElement>(":scope > .tabsdown--mounted")!;
+    const tabList = root.querySelector<HTMLElement>(":scope > .tabsdown__tablist")!;
+    const buttons = Array.from(tabList.querySelectorAll<HTMLButtonElement>(".tabsdown__tab"));
+    const separator = tabList.querySelectorAll<HTMLElement>(".tabsdown__separator")[1]!;
+    vi.spyOn(tabList, "getBoundingClientRect").mockReturnValue(box(0, 0, 100, 20));
+    vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(0, 0, 40, 20));
+    const secondBox = vi
+      .spyOn(buttons[1]!, "getBoundingClientRect")
+      .mockReturnValue(box(44, 0, 40, 20));
+    window.dispatchEvent(new Event("resize"));
+    expect(separator.style.left).toBe("42px");
+
+    document.body.append(container);
+    await Promise.resolve();
+    secondBox.mockReturnValue(box(60, 0, 40, 20));
+    document.body.classList.add("separator-layout-change");
+    await Promise.resolve();
+    expect(separator.style.left).toBe("50px");
+
+    document.body.classList.remove("separator-layout-change");
+    controller.destroy();
+  });
+
   test("keeps nullable exclusive state and only notifies for user intent", () => {
     const changes = vi.fn();
     const mounted = callerTabs({ onSelectionChange: changes });

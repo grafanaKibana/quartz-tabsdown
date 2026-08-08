@@ -83,12 +83,23 @@ function setupSeparators(root: HTMLElement): SeparatorOperation {
   const observer = view?.ResizeObserver ? new view.ResizeObserver(refresh) : undefined;
   observer?.observe(tabList);
   tabs.forEach((tab) => observer?.observe(tab));
-  const mutations = view?.MutationObserver ? new view.MutationObserver(refresh) : undefined;
-  for (let element: Element | null = tabList; element; element = element.parentElement) {
-    mutations?.observe(element, {
-      attributes: true,
-      attributeFilter: ["class", "style", "dir"],
+  let mutations: MutationObserver | undefined;
+  if (view?.MutationObserver) {
+    const observeAncestors = (): void => {
+      mutations?.disconnect();
+      mutations?.observe(document as unknown as Node, { childList: true, subtree: true });
+      for (let element: Element | null = tabList; element; element = element.parentElement) {
+        mutations?.observe(element, {
+          attributes: true,
+          attributeFilter: ["class", "style", "dir"],
+        });
+      }
+    };
+    mutations = new view.MutationObserver(() => {
+      observeAncestors();
+      refresh();
     });
+    observeAncestors();
   }
   tabList.addEventListener("scroll", refresh);
   view?.addEventListener("resize", refresh);
