@@ -302,6 +302,9 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain(".tabsdown.tabsdown-underline-placement-bottom");
     expect(styles).toContain('.tabsdown__separator[data-axis="inline"]');
     expect(styles).toContain("block-size: min(1cap");
+    expect(/@mixin underline-personality \{([\s\S]*?)\n\}/.exec(styles)?.[1]).toContain(
+      "--tabsdown-button-selected-color: var(--tabsdown-tab-underline-color)",
+    );
     expect(styles).toContain("@container (max-width: 28rem)");
     const containerStart = styles.indexOf("@container (max-width: 28rem)");
     const narrow = styles.slice(containerStart, styles.indexOf("@keyframes", containerStart));
