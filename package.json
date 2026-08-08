@@ -1,6 +1,6 @@
 {
   "name": "quartz-tabsdown",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tabbed Markdown blocks for Quartz, matching the Obsidian Tabsdown plugin syntax.",
   "type": "module",
   "license": "MIT",
@@ -94,7 +94,7 @@
     "name": "tabsdown",
     "displayName": "Tabsdown",
     "category": "transformer",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "quartzVersion": ">=5.0.0",
     "requiresInstall": true,
     "dependencies": [],
