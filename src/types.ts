@@ -30,6 +30,7 @@ export {
   type TabsdownPositionPalette,
   type TabsdownPositionPersonality,
   type TabsdownPositionStyleOptions,
+  type ResolvedTabsdownSelectedFontWeight,
   type TabsdownSelectedFontWeight,
   type TabsdownSize,
   type TabsdownStyleOptions,

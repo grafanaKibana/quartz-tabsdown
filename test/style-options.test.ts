@@ -395,17 +395,17 @@ describe("style settings contract and output helpers", () => {
     expect(
       resolveTabsdownStyles({
         styles: { selectedFontWeight: "theme-default" },
-      } as unknown as TabsdownOptions).selectedFontWeight,
+      }).selectedFontWeight,
     ).toBe("default");
     expect(
       resolveTabsdownStyles({
         styles: { selectedFontWeight: "medium" },
-      } as unknown as TabsdownOptions).selectedFontWeight,
+      }).selectedFontWeight,
     ).toBe("default");
     expect(
       resolveTabsdownStyles({
         styles: { selectedFontWeight: "bold" },
-      } as unknown as TabsdownOptions).selectedFontWeight,
+      }).selectedFontWeight,
     ).toBe("bolder");
   });
 });

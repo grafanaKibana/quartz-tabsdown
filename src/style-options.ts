@@ -4,7 +4,9 @@ export type TabsdownUnderlinePlacement = "auto" | "top" | "right" | "bottom" | "
 export type TabsdownOverflow = "scroll" | "wrap";
 export type TabsdownPalette = "primary" | "secondary";
 export type TabsdownAlignment = "start" | "center" | "equal-width";
-export type TabsdownSelectedFontWeight = "thinner" | "default" | "bolder";
+export type ResolvedTabsdownSelectedFontWeight = "thinner" | "default" | "bolder";
+export type TabsdownSelectedFontWeight =
+  ResolvedTabsdownSelectedFontWeight | "theme-default" | "medium" | "bold";
 export type TabsdownNestedStyle = "card" | "flat";
 export type TabsdownPosition = "top" | "bottom" | "left" | "right";
 export type TabsdownPositionPersonality = "inherit" | "button" | "underline" | "separator" | "rail";
@@ -320,7 +322,7 @@ export interface ResolvedTabsdownGlobalStyles {
   sideWidth: number;
   iconSize: number;
   iconSpacing: number;
-  selectedFontWeight: TabsdownSelectedFontWeight;
+  selectedFontWeight: ResolvedTabsdownSelectedFontWeight;
   nestedStyle: TabsdownNestedStyle;
 }
 
