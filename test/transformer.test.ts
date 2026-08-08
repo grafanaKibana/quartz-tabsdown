@@ -78,6 +78,27 @@ describe("Tabsdown transformer", () => {
     expect(html.match(/tabsdown__tab-icon/g)).toHaveLength(1);
   });
 
+  test("formats the bounded inline label subset in buttons and no-JS panel labels", async () => {
+    const html = await render(
+      fence(
+        [
+          "tab: icon:code **Strong** *Em* ~~Gone~~ `Code`",
+          "tab: Unsafe [link](https://example.test) <img src=x> ****",
+        ].join("\n"),
+      ),
+    );
+
+    expect(html).toContain(
+      '<span class="tabsdown__tab-label"><strong>Strong</strong> <em>Em</em> <del>Gone</del> <code>Code</code></span>',
+    );
+    expect(html).toContain(
+      '<div class="tabsdown__panel-label"><strong>Strong</strong> <em>Em</em> <del>Gone</del> <code>Code</code></div>',
+    );
+    expect(html).toContain("[link](https://example.test) &#x3C;img src=x> ****");
+    expect(html).not.toContain('<a href="https://example.test"');
+    expect(html).not.toContain("<img src=x>");
+  });
+
   test("renders a nested block inside a panel", async () => {
     const html = await render(
       fence(
@@ -180,7 +201,21 @@ describe("Tabsdown transformer", () => {
     expect(resources?.css?.[0]?.content).toContain("--tabsdown-horizontal-padding: 36px");
     expect(resources?.css?.[0]?.content).toContain("--tabsdown-side-width: 192px");
     expect(resources?.css?.[0]?.content).toContain("tabsdown-personality-underline");
+    expect(resources?.css?.[0]?.content).toContain("tabsdown-personality-separator");
+    expect(resources?.css?.[0]?.content).toContain("tabsdown-personality-rail");
     expect(resources?.css?.[0]?.content).toContain("tabsdown-#{$position}-personality-underline");
+    expect(resources?.css?.[0]?.content).toContain("tabsdown-#{$position}-personality-separator");
+    expect(resources?.css?.[0]?.content).toContain("tabsdown-#{$position}-personality-rail");
+    expect(resources?.css?.[0]?.content).toContain("tabsdown-underline-placement-top");
+    expect(resources?.css?.[0]?.content).toContain(
+      ".tabsdown--left.tabsdown-underline-placement-auto",
+    );
+    expect(resources?.css?.[0]?.content).toContain(
+      ".tabsdown--right.tabsdown-underline-placement-auto",
+    );
+    expect(resources?.css?.[0]?.content).toContain(
+      ".tabsdown > .tabsdown__tablist > .tabsdown__tab:not([hidden])",
+    );
     expect(resources?.css?.[0]?.content).toContain(
       ".tabsdown--#{$position}.tabsdown-#{$position}-palette-secondary",
     );

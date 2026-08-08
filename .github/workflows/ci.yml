@@ -11,13 +11,18 @@ on:
 jobs:
   upstream-parity:
     runs-on: ubuntu-latest
+    env:
+      OBSIDIAN_TABSDOWN_SHA: 836a75b6199def6752025afb38f041624fb4f1ca
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm install
-      - run: npm run check:upstream
+      - if: github.event_name != 'schedule'
+        run: npm run check:upstream -- "$OBSIDIAN_TABSDOWN_SHA"
+      - if: github.event_name == 'schedule'
+        run: npm run check:upstream
 
   quartz-smoke:
     runs-on: ubuntu-latest

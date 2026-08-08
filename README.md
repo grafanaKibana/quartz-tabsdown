@@ -39,13 +39,13 @@ Start each tab with a column-zero `tab: <label>` marker. A block needs at least 
 ````tabsdown
 config: top, multi
 
-tab: Python
+tab: **Python**
 
 ```python
 print("Hello Tabsdown")
 ```
 
-tab: JavaScript
+tab: `JavaScript`
 
 ```javascript
 console.log("Hello Tabsdown");
@@ -56,6 +56,8 @@ console.log("Hello Tabsdown");
 Use matching backtick or tilde fences. The outer fence must be longer than every same-character fence inside it.
 
 Tab bodies are parsed as Markdown before the rest of the pipeline runs, so links, embeds, callouts, math, and syntax highlighting all work inside a tab exactly as they do outside one.
+
+Tab labels support a bounded, non-interactive subset: `**bold**`, `*italic*`, `~~strikethrough~~`, and backtick inline code. Multiple non-overlapping forms can share a label. Links, wikilinks, images, raw HTML, nested formatting, and malformed delimiters remain visible literal text.
 
 ### Icons
 
@@ -92,10 +94,10 @@ let tabs: TabsController | undefined;
 
 if (runtime) {
   tabs = runtime.mountTabs(container, {
-    label: "Trace details",
+    label: "**Trace** details",
     tabs: [
-      { id: "trace", label: "Trace", panel: tracePanel },
-      { id: "watch", label: "Watch", panel: watchPanel },
+      { id: "trace", label: "**Trace**", panel: tracePanel },
+      { id: "watch", label: "`Watch`", panel: watchPanel },
     ],
     selection: null,
     onSelectionChange(selection, previous) {
@@ -135,6 +137,7 @@ Use `options.styles` for ordinary Tabsdown appearance. A minimal override is:
 options:
   styles:
     personality: underline
+    underlinePlacement: auto
     gap: 8
 ```
 
@@ -145,6 +148,7 @@ options:
   styles:
     size: default
     personality: underline
+    underlinePlacement: auto
     overflow: scroll
     palette: primary
     accent: null
@@ -184,35 +188,36 @@ options:
 
 ### Schema
 
-| Key                  | Accepted values                   | Default                |
-| -------------------- | --------------------------------- | ---------------------- |
-| `size`               | `compact`, `default`              | `default`              |
-| `personality`        | `default`, `underline`            | `default`              |
-| `overflow`           | `scroll`, `wrap`                  | `scroll`               |
-| `palette`            | `primary`, `secondary`            | `primary`              |
-| `accent`             | CSS color or `null`               | `null` (Quartz accent) |
-| `alignment`          | `start`, `center`, `equal-width`  | `start`                |
-| `themeButtonOutline` | boolean                           | `false`                |
-| `underlineThickness` | `1`–`8` px                        | `2`                    |
-| `gap`                | `0`–`48` px                       | `4`                    |
-| `radius`             | `0`–`24` px                       | `4`                    |
-| `horizontalPadding`  | `0`–`48` px                       | `36`                   |
-| `contentSpacing`     | `0`–`48` px                       | `12`                   |
-| `sideWidth`          | `192`–`320` px, step `8`          | `192`                  |
-| `iconSize`           | `12`–`32` px                      | `16`                   |
-| `iconSpacing`        | `0`–`16` px                       | `6`                    |
-| `selectedFontWeight` | `theme-default`, `medium`, `bold` | `theme-default`        |
-| `nestedStyle`        | `card`, `flat`                    | `card`                 |
-| `motion.speed`       | `0`–`500` ms, step `20`           | `160`                  |
-| `motion.disabled`    | boolean                           | `false`                |
+| Key                  | Accepted values                             | Default                |
+| -------------------- | ------------------------------------------- | ---------------------- |
+| `size`               | `compact`, `default`                        | `default`              |
+| `personality`        | `default`, `underline`, `separator`, `rail` | `default`              |
+| `overflow`           | `scroll`, `wrap`                            | `scroll`               |
+| `palette`            | `primary`, `secondary`                      | `primary`              |
+| `accent`             | CSS color or `null`                         | `null` (Quartz accent) |
+| `alignment`          | `start`, `center`, `equal-width`            | `start`                |
+| `themeButtonOutline` | boolean                                     | `false`                |
+| `underlinePlacement` | `auto`, `top`, `right`, `bottom`, `left`    | `auto`                 |
+| `underlineThickness` | `1`–`8` px                                  | `2`                    |
+| `gap`                | `0`–`48` px                                 | `4`                    |
+| `radius`             | `0`–`24` px                                 | `4`                    |
+| `horizontalPadding`  | `0`–`48` px                                 | `36`                   |
+| `contentSpacing`     | `0`–`48` px                                 | `12`                   |
+| `sideWidth`          | `192`–`320` px, step `8`                    | `192`                  |
+| `iconSize`           | `12`–`32` px                                | `16`                   |
+| `iconSpacing`        | `0`–`16` px                                 | `6`                    |
+| `selectedFontWeight` | `theme-default`, `medium`, `bold`           | `theme-default`        |
+| `nestedStyle`        | `card`, `flat`                              | `card`                 |
+| `motion.speed`       | `0`–`500` ms, step `20`                     | `160`                  |
+| `motion.disabled`    | boolean                                     | `false`                |
 
 Every `positions.top`, `positions.bottom`, `positions.left`, and `positions.right` entry accepts the same three optional overrides:
 
-| Position key  | Accepted values                             | Default   |
-| ------------- | ------------------------------------------- | --------- |
-| `personality` | `inherit`, `button`, `underline`            | `inherit` |
-| `palette`     | `inherit`, `primary`, `secondary`           | `inherit` |
-| `alignment`   | `inherit`, `start`, `center`, `equal-width` | `inherit` |
+| Position key  | Accepted values                                       | Default   |
+| ------------- | ----------------------------------------------------- | --------- |
+| `personality` | `inherit`, `button`, `underline`, `separator`, `rail` | `inherit` |
+| `palette`     | `inherit`, `primary`, `secondary`                     | `inherit` |
+| `alignment`   | `inherit`, `start`, `center`, `equal-width`           | `inherit` |
 
 `options.styles` is site-wide. A fenced block's `config: top|bottom|left|right, one|multi` marker still owns that block's structure and explicit overflow. Position overrides apply only to authored fences in the matching position. The public `mountTabs` runtime receives global styles and ignores position overrides.
 
@@ -240,7 +245,7 @@ Quartz v5 has no release tag — it builds from a moving default branch — so C
 ### Staying in sync with obsidian-tabsdown
 
 ```bash
-npm run check:upstream
+npm run check:upstream -- <40-character-obsidian-pr-head-sha>
 ```
 
 `src/parser.ts` and `test/parser.test.ts` are vendored from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) so both plugins accept exactly the same syntax. The same machine-readable contract drives Quartz validation and the Style Settings parity check. This command builds the package, fetches upstream, and fails on any of:
@@ -250,7 +255,7 @@ npm run check:upstream
 - a changed control type, default, enum value, range, step, or unit;
 - a numeric/color/toggle control with no corresponding plugin-owned CSS rule.
 
-CI runs it on every push and pull request, plus every Monday, so a change made in obsidian-tabsdown surfaces here even when nobody touches this repo.
+Push and pull-request CI pins the exact 40-character Obsidian implementation SHA. The zero-argument `npm run check:upstream` maintenance path resolves `main` to an immutable commit and is reserved for the weekly drift check.
 
 ## License
 

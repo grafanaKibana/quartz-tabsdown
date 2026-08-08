@@ -1,4 +1,5 @@
 import type { MountTabsOptions, TabsController } from "../types";
+import { inlineLabelText, parseInlineLabel, type InlineLabelToken } from "../parser";
 
 const configuredStyleClasses = "__TABSDOWN_STYLE_CLASSES__";
 const styleClasses = configuredStyleClasses.startsWith("__")
@@ -43,6 +44,34 @@ const genericPanelTags = new Set(["DIV", "SPAN", "PRE"]);
 const focusableSelector =
   'a[href], audio[controls], button:not([disabled]), details, iframe, input:not([disabled]):not([type="hidden"]), select:not([disabled]), summary, textarea:not([disabled]), video[controls], [contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex="-1"]):not([disabled])';
 let nextMountId = 0;
+
+function renderInlineLabel(parent: HTMLElement, tokens: readonly InlineLabelToken[]): void {
+  const document = parent.ownerDocument;
+  for (const token of tokens) {
+    if (token.type === "text") {
+      parent.append(document.createTextNode(token.text));
+      continue;
+    }
+    let tagName: "strong" | "em" | "del" | "code";
+    switch (token.type) {
+      case "strong":
+        tagName = "strong";
+        break;
+      case "emphasis":
+        tagName = "em";
+        break;
+      case "delete":
+        tagName = "del";
+        break;
+      case "code":
+        tagName = "code";
+        break;
+    }
+    const element = document.createElement(tagName);
+    element.textContent = token.text;
+    parent.append(element);
+  }
+}
 
 function isShadowIncludingAncestor(ancestor: Node, node: Node): boolean {
   let current: Node | null = node;
@@ -234,6 +263,9 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
   if (new Set(options.tabs.map((tab) => tab.panel)).size !== options.tabs.length) {
     throw new Error("Tabsdown: mountTabs panel elements must be unique.");
   }
+
+  const groupLabel = inlineLabelText(parseInlineLabel(options.label));
+  const tabLabels = options.tabs.map((tab) => parseInlineLabel(tab.label));
   if (
     options.tabs.some((tab, index) =>
       options.tabs.some(
@@ -316,7 +348,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
   const tabList = ownerDocument.createElement("div");
   tabList.className = "tabsdown__tablist";
   tabList.setAttribute("role", "group");
-  tabList.setAttribute("aria-label", options.label);
+  tabList.setAttribute("aria-label", groupLabel);
   const panelsElement = ownerDocument.createElement("div");
   panelsElement.className = "tabsdown__panels";
 
@@ -335,7 +367,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
     button.className = "tabsdown__tab";
     const label = ownerDocument.createElement("span");
     label.className = "tabsdown__tab-label";
-    label.textContent = tab.label;
+    renderInlineLabel(label, tabLabels[index] ?? []);
     button.append(label);
     tabList.append(button);
 

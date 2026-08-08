@@ -1,9 +1,9 @@
+import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { format, resolveConfig } from "prettier";
 import { parse } from "yaml";
-import { STYLE_SETTINGS_CONTRACT } from "../dist/types.js";
 
-const UPSTREAM = "https://raw.githubusercontent.com/grafanaKibana/obsidian-tabsdown/main";
+const REPOSITORY = "grafanaKibana/obsidian-tabsdown";
 const STYLESHEET = "src/styles/tabsdown.scss";
 
 /** Files copied verbatim from obsidian-tabsdown, compared after formatting. */
@@ -13,9 +13,51 @@ const VENDORED = [
 ];
 
 const problems = [];
+const args = process.argv.slice(2);
+if (args.length > 1) {
+  throw new Error("expected zero arguments for maintenance main or one exact 40-character SHA");
+}
+const requestedRef = args[0]?.toLowerCase() ?? "main";
+if (args.length === 1 && !/^[0-9a-f]{40}$/.test(requestedRef)) {
+  throw new Error(`requested ref must be an exact 40-character SHA: ${args[0]}`);
+}
+
+const headers = {
+  Accept: "application/vnd.github+json",
+  "X-GitHub-Api-Version": "2022-11-28",
+  ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+};
+const commitResponse = await fetch(
+  `https://api.github.com/repos/${REPOSITORY}/commits/${requestedRef}`,
+  { headers },
+);
+if (!commitResponse.ok) {
+  throw new Error(
+    `repo=${REPOSITORY} requested_ref=${requestedRef} commit resolution failed: ` +
+      `${commitResponse.status} ${commitResponse.statusText}`,
+  );
+}
+const resolvedSha = String((await commitResponse.json()).sha ?? "").toLowerCase();
+if (!/^[0-9a-f]{40}$/.test(resolvedSha)) {
+  throw new Error(
+    `repo=${REPOSITORY} requested_ref=${requestedRef} returned invalid commit SHA ${resolvedSha}`,
+  );
+}
+if (args.length === 1 && resolvedSha !== requestedRef) {
+  throw new Error(
+    `repo=${REPOSITORY} requested_ref=${requestedRef} resolved_sha=${resolvedSha} identity mismatch`,
+  );
+}
+
+console.log(`repo=${REPOSITORY} requested_ref=${requestedRef} resolved_sha=${resolvedSha}`);
+execFileSync(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "build"], {
+  stdio: "inherit",
+});
+const { STYLE_SETTINGS_CONTRACT } = await import("../dist/types.js");
+const upstream = `https://raw.githubusercontent.com/${REPOSITORY}/${resolvedSha}`;
 
 async function fetchUpstream(path) {
-  const response = await fetch(`${UPSTREAM}/${path}`);
+  const response = await fetch(`${upstream}/${path}`);
   if (!response.ok) {
     throw new Error(`could not fetch ${path}: ${response.status} ${response.statusText}`);
   }
@@ -119,6 +161,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `In sync with obsidian-tabsdown: ${VENDORED.length} vendored files identical and ` +
+  `In sync with ${REPOSITORY}@${resolvedSha}: ${VENDORED.length} vendored files identical and ` +
     `${controls} Style Settings controls mapped with defaults, types, enums, ranges, steps, and units.`,
 );

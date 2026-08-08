@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { compileString } from "sass";
 import { describe, expect, test } from "vitest";
 import {
   resolveTabsdownStyles,
@@ -40,6 +43,7 @@ describe("resolveTabsdownStyles", () => {
       accent: null,
       alignment: "start",
       themeButtonOutline: false,
+      underlinePlacement: "auto",
       underlineThickness: 2,
       gap: 4,
       radius: 4,
@@ -64,11 +68,13 @@ describe("resolveTabsdownStyles", () => {
     const options: TabsdownOptions = {
       styles: {
         size: "compact",
+        personality: "rail",
+        underlinePlacement: "left",
         accent: "oklch(62% 0.2 250)",
         themeButtonOutline: true,
         sideWidth: 240,
         positions: {
-          top: { personality: "underline", alignment: "center" },
+          top: { personality: "separator", alignment: "center" },
           right: { palette: "secondary" },
         },
         motion: { speed: 320, disabled: true },
@@ -77,6 +83,8 @@ describe("resolveTabsdownStyles", () => {
     const resolved = resolveTabsdownStyles(options);
     expect(resolved).toMatchObject({
       size: "compact",
+      personality: "rail",
+      underlinePlacement: "left",
       accent: "oklch(62% 0.2 250)",
       themeButtonOutline: true,
       sideWidth: 240,
@@ -84,7 +92,7 @@ describe("resolveTabsdownStyles", () => {
       motion: { speed: 320, disabled: true },
     });
     expect(resolved.positions.top).toEqual({
-      personality: "underline",
+      personality: "separator",
       palette: "inherit",
       alignment: "center",
     });
@@ -108,6 +116,7 @@ describe("resolveTabsdownStyles", () => {
 
   test.each([
     [{ styles: { size: "tiny" } }, "options.styles.size"],
+    [{ styles: { underlinePlacement: "center" } }, "options.styles.underlinePlacement"],
     [
       { styles: { positions: { left: { personality: "default" } } } },
       "options.styles.positions.left.personality",
@@ -156,9 +165,22 @@ describe("resolveTabsdownStyles", () => {
 });
 
 describe("style settings contract and output helpers", () => {
-  test("describes all 31 non-heading upstream controls exactly once", () => {
-    expect(STYLE_SETTINGS_CONTRACT).toHaveLength(31);
-    expect(new Set(STYLE_SETTINGS_CONTRACT.map(({ id }) => id))).toHaveLength(31);
+  test("describes all 32 non-heading upstream controls exactly once", () => {
+    expect(STYLE_SETTINGS_CONTRACT).toHaveLength(32);
+    expect(new Set(STYLE_SETTINGS_CONTRACT.map(({ id }) => id))).toHaveLength(32);
+    expect(STYLE_SETTINGS_CONTRACT).toContainEqual({
+      path: "underlinePlacement",
+      id: "tabsdown-underline-placement",
+      type: "class-select",
+      default: "tabsdown-underline-placement-auto",
+      enums: [
+        "tabsdown-underline-placement-auto",
+        "tabsdown-underline-placement-top",
+        "tabsdown-underline-placement-right",
+        "tabsdown-underline-placement-bottom",
+        "tabsdown-underline-placement-left",
+      ],
+    });
     expect(STYLE_SETTINGS_CONTRACT).toContainEqual({
       path: "motion.speed",
       id: "tabsdown-animation-speed",
@@ -226,6 +248,7 @@ describe("style settings contract and output helpers", () => {
     expect(tabsdownStyleClasses(resolved)).toEqual([
       "tabsdown-density-compact",
       "tabsdown-personality-default",
+      "tabsdown-underline-placement-auto",
       "tabsdown-overflow-scroll",
       "tabsdown-palette-primary",
       "tabsdown-alignment-start",
@@ -250,5 +273,96 @@ describe("style settings contract and output helpers", () => {
     expect(css).toContain("--tabsdown-side-width: 240px;");
     expect(css).toContain("--tabsdown-animation-speed: 0ms;");
     expect(tabsdownStyleVariables(resolveTabsdownStyles())).not.toContain("accent-override");
+  });
+
+  test("keeps every personality reset complete and position-aware", () => {
+    const styles = readFileSync("src/styles/tabsdown.scss", "utf8");
+    for (const personality of ["button", "underline", "separator", "rail"]) {
+      const mixin = new RegExp(`@mixin ${personality}-personality \\{([\\s\\S]*?)\\n\\}`).exec(
+        styles,
+      )?.[1];
+      expect(mixin, personality).toBeDefined();
+      for (const property of [
+        "--tabsdown-separator-width",
+        "--tabsdown-button-border-top-width",
+        "--tabsdown-button-border-right-width",
+        "--tabsdown-button-border-bottom-width",
+        "--tabsdown-button-border-left-width",
+        "--tabsdown-button-background",
+        "--tabsdown-button-selected-background",
+        "--tabsdown-tablist-background",
+      ]) {
+        expect(mixin, `${personality}: ${property}`).toContain(property);
+      }
+      expect(styles).toContain(`tabsdown-#{$position}-personality-${personality}`);
+    }
+    expect(styles).toContain(".tabsdown--left.tabsdown-underline-placement-auto");
+    expect(styles).toContain(".tabsdown--right.tabsdown-underline-placement-auto");
+    expect(styles).toContain(".tabsdown.tabsdown-underline-placement-top");
+    expect(styles).toContain(".tabsdown.tabsdown-underline-placement-bottom");
+    expect(styles).toContain(".tabsdown__tab:not([hidden]) ~ .tabsdown__tab:not([hidden])");
+    expect(styles).toContain("@container (max-width: 28rem)");
+    const containerStart = styles.indexOf("@container (max-width: 28rem)");
+    const narrow = styles.slice(containerStart, styles.indexOf("@keyframes", containerStart));
+    expect(narrow).toContain(".tabsdown--left > .tabsdown__tablist,");
+    expect(narrow).toContain(".tabsdown--right > .tabsdown__tablist {");
+    expect(narrow).not.toContain("\n  .tabsdown--left,\n  .tabsdown--right {");
+  });
+
+  test("lets every explicit position personality fully override every global personality", () => {
+    const css = compileString(readFileSync("src/styles/tabsdown.scss", "utf8")).css;
+    const personalities = ["default", "underline", "separator", "rail"] as const;
+    const overrides = ["button", "underline", "separator", "rail"] as const;
+
+    for (const global of personalities) {
+      for (const position of ["top", "bottom", "left", "right"] as const) {
+        for (const override of overrides) {
+          const classes = tabsdownStyleClasses(
+            resolveTabsdownStyles({
+              styles: { personality: global, positions: { [position]: { personality: override } } },
+            }),
+          );
+          const globalClass = `tabsdown-personality-${global}`;
+          const positionClass = `tabsdown-${position}-personality-${override}`;
+          const selector = `.tabsdown--${position}.${positionClass}`;
+          const rule = new RegExp(
+            `${selector.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")} \\{([\\s\\S]*?)\\n\\}`,
+          ).exec(css)?.[1];
+
+          expect(classes).toContain(globalClass);
+          expect(classes).toContain(positionClass);
+          expect(rule, `${global} -> ${positionClass}`).toContain(
+            `--tabsdown-separator-width: ${override === "separator" ? "1px" : "0"}`,
+          );
+          expect(css.indexOf(`.tabsdown.tabsdown-personality-${global}`)).toBeLessThan(
+            css.indexOf(selector),
+          );
+        }
+      }
+    }
+  });
+
+  test("targets direct side tablists at both top-level and nested container roots", () => {
+    const css = compileString(readFileSync("src/styles/tabsdown.scss", "utf8")).css;
+    const containerRule = /@container \(max-width: 28rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1];
+    const separatorSelector = /([^{}]+)\{[^{}]*--tabsdown-separator-inline-width/.exec(
+      containerRule ?? "",
+    )?.[1];
+    expect(separatorSelector).toBeDefined();
+
+    const fixture = document.createElement("div");
+    fixture.innerHTML = `
+      <div id="top" class="tabsdown tabsdown--left">
+        <div id="top-list" class="tabsdown__tablist"></div>
+        <div class="tabsdown__panels">
+          <div id="nested" class="tabsdown tabsdown--right">
+            <div id="nested-list" class="tabsdown__tablist"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    const matches = Array.from(fixture.querySelectorAll(separatorSelector!.trim()), ({ id }) => id);
+
+    expect(matches).toEqual(["top-list", "nested-list"]);
   });
 });

@@ -469,6 +469,85 @@ describe("client script", () => {
 });
 
 describe("public mountTabs bridge", () => {
+  test("formats labels safely and derives the group accessible name", () => {
+    const container = document.createElement("div");
+    const first = document.createElement("section");
+    const second = document.createElement("section");
+    container.append(first, second);
+    document.body.append(container);
+
+    const controller = window.tabsdown!.mountTabs(container, {
+      label: "**Trace** *details*",
+      tabs: [
+        { id: "first", label: "**Strong** *Em* ~~Gone~~ `Code`", panel: first },
+        { id: "second", label: "[link](https://example.test) <img src=x> ****", panel: second },
+      ],
+    });
+    const root = container.querySelector<HTMLElement>(".tabsdown--mounted")!;
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>(".tabsdown__tab"));
+
+    expect(root.querySelector(".tabsdown__tablist")?.getAttribute("aria-label")).toBe(
+      "Trace details",
+    );
+    expect(buttons[0]!.querySelector(".tabsdown__tab-label")?.innerHTML).toBe(
+      "<strong>Strong</strong> <em>Em</em> <del>Gone</del> <code>Code</code>",
+    );
+    expect(buttons[1]!.textContent).toBe("[link](https://example.test) <img src=x> ****");
+    expect(root.querySelector("a, img, script")).toBeNull();
+
+    for (const tag of ["strong", "em", "del", "code"]) {
+      buttons[0]!.querySelector(tag)!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(controller.selection).toBe("first");
+      controller.setSelection(null);
+    }
+  });
+
+  test("keeps delimiter-only labels nonblank and duplicate derived names distinct by id", () => {
+    const container = document.createElement("div");
+    const first = document.createElement("section");
+    const second = document.createElement("section");
+    container.append(first, second);
+    document.body.append(container);
+
+    window.tabsdown!.mountTabs(container, {
+      label: "****",
+      tabs: [
+        { id: "raw", label: "A", panel: first },
+        { id: "formatted", label: "**A**", panel: second },
+      ],
+    });
+
+    const tabList = container.querySelector<HTMLElement>(".tabsdown__tablist")!;
+    expect(tabList.getAttribute("aria-label")).toBe("****");
+    expect(Array.from(tabList.querySelectorAll("button"), (button) => button.textContent)).toEqual([
+      "A",
+      "A",
+    ]);
+  });
+
+  test("creates formatted controls in the target ownerDocument", () => {
+    const target = document.implementation.createHTMLDocument("pop-out");
+    const container = target.createElement("div");
+    const first = target.createElement("section");
+    const second = target.createElement("section");
+    container.append(first, second);
+    target.body.append(container);
+
+    window.tabsdown!.mountTabs(container, {
+      label: "**Pop-out** group",
+      tabs: [
+        { id: "first", label: "**First**", panel: first },
+        { id: "second", label: "`Second`", panel: second },
+      ],
+    });
+
+    const descendants = Array.from(container.querySelectorAll(".tabsdown--mounted *"));
+    expect(descendants.length).toBeGreaterThan(0);
+    expect(descendants.every((element) => element.ownerDocument === target)).toBe(true);
+    expect(container.querySelector("strong")?.textContent).toBe("First");
+    expect(container.querySelector("code")?.textContent).toBe("Second");
+  });
+
   test("mounts caller panels as an initially collapsed disclosure group", () => {
     const { buttons, controller, first, root, second } = callerTabs();
 

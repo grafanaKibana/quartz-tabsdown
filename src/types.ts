@@ -35,6 +35,7 @@ export {
   type TabsdownStyleOptions,
   type TabsdownStyleOptions as TabsdownStyles,
   type TabsdownStyleSettingContract,
+  type TabsdownUnderlinePlacement,
 } from "./style-options";
 
 export interface TabSpec {
