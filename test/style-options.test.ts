@@ -366,7 +366,7 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain("flex: 1 1 0");
   });
 
-  test("keeps selected weight and wrapped equal-width geometry stable", () => {
+  test("keeps selected weight stable and fills wrapped equal-width rows", () => {
     const styles = readFileSync("src/styles/tabsdown.scss", "utf8");
     const nested =
       /\.tabsdown--nested-odd\.tabsdown,\n\.tabsdown--nested-even\.tabsdown \{([\s\S]*?)\n\}/.exec(
@@ -375,10 +375,12 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain(".tabsdown__tab-reserve");
     expect(styles).toContain("font-weight: 700");
     expect(styles).toContain(".tabsdown__tab-reserve--icon");
-    expect(styles).toContain("display: grid");
+    expect(styles).not.toContain("grid-template-columns");
     expect(styles).toContain(
       "calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))",
     );
+    expect(styles).toContain("flex: 1 1 var(--tabsdown-equal-wrap-basis)");
+    expect(styles).toContain("inline-size: auto");
     expect(styles).toContain("@media (any-pointer: coarse)");
     expect(styles).toContain(".tabsdown__tab[hidden]");
     expect(styles).toContain(".tabsdown__separator[hidden]");

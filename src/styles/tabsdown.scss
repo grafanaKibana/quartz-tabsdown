@@ -16,6 +16,13 @@
   --tabsdown-density-tab-padding-block: 0.5rem;
   --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
   --tabsdown-tab-padding-inline: var(--tabsdown-horizontal-padding);
+  --tabsdown-equal-wrap-basis: min(
+    100%,
+    max(
+      var(--tabsdown-tab-min-size),
+      calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))
+    )
+  );
 
   --tabsdown-accent: var(--tabsdown-accent-override, var(--secondary));
   --tabsdown-tab-background: var(--highlight);
@@ -471,40 +478,9 @@
       ),
     .tabsdown--bottom.tabsdown-bottom-alignment-equal-width
   )
-  > .tabsdown__tablist {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(
-      min(
-        100%,
-        max(
-          var(--tabsdown-tab-min-size),
-          calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))
-        )
-      ),
-      1fr
-    )
-  );
-}
-
-.tabsdown:is(
-    .tabsdown-overflow-wrap:not(.tabsdown--inline-overflow),
-    .tabsdown--inline-overflow.tabsdown--multi
-  ):is(
-    .tabsdown--mounted.tabsdown-alignment-equal-width,
-    .tabsdown--top.tabsdown-alignment-equal-width:not(.tabsdown-top-alignment-start):not(
-        .tabsdown-top-alignment-center
-      ),
-    .tabsdown--top.tabsdown-top-alignment-equal-width,
-    .tabsdown--bottom.tabsdown-alignment-equal-width:not(.tabsdown-bottom-alignment-start):not(
-        .tabsdown-bottom-alignment-center
-      ),
-    .tabsdown--bottom.tabsdown-bottom-alignment-equal-width
-  )
   > .tabsdown__tablist
   > .tabsdown__tab {
-  flex: none;
+  flex: 1 1 var(--tabsdown-equal-wrap-basis);
   min-inline-size: 0;
 }
 
@@ -779,39 +755,10 @@
         ),
       .tabsdown--right.tabsdown-right-alignment-equal-width
     )
-    > .tabsdown__tablist {
-    display: grid;
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(
-        min(
-          100%,
-          max(
-            var(--tabsdown-tab-min-size),
-            calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))
-          )
-        ),
-        1fr
-      )
-    );
-  }
-
-  .tabsdown:is(
-      .tabsdown-overflow-wrap:not(.tabsdown--inline-overflow),
-      .tabsdown--inline-overflow.tabsdown--multi
-    ):is(
-      .tabsdown--left.tabsdown-alignment-equal-width:not(.tabsdown-left-alignment-start):not(
-          .tabsdown-left-alignment-center
-        ),
-      .tabsdown--left.tabsdown-left-alignment-equal-width,
-      .tabsdown--right.tabsdown-alignment-equal-width:not(.tabsdown-right-alignment-start):not(
-          .tabsdown-right-alignment-center
-        ),
-      .tabsdown--right.tabsdown-right-alignment-equal-width
-    )
     > .tabsdown__tablist
     > .tabsdown__tab {
-    inline-size: 100%;
+    flex: 1 1 var(--tabsdown-equal-wrap-basis);
+    inline-size: auto;
     min-inline-size: 0;
   }
 }

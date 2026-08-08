@@ -214,7 +214,7 @@ options:
 Legacy `theme-default`, `medium`, and `bold` selected weights are normalized to `default`,
 `default`, and `bolder` at runtime.
 
-Separator spans 80% of the adjacent tab height or width and is hidden at every wrapped row or column start. Rail uses a larger padded track with shorter desktop tabs while touch-capable devices retain 44px targets. Primary accents selected Separator text and the Rail segment; Secondary keeps the neutral treatment, including inside nested blocks. Tabs reserve an exact hidden copy of the formatted label at the bolder weight before selection, and wrapped Equal width uses shared grid tracks so columns and gaps align across rows.
+Separator spans 80% of the adjacent tab height or width and is hidden at every wrapped row or column start. Rail uses a larger padded track with shorter desktop tabs while touch-capable devices retain 44px targets. Primary accents selected Separator text and the Rail segment; Secondary keeps the neutral treatment, including inside nested blocks. Tabs reserve an exact hidden copy of the formatted label at the bolder weight before selection. With Equal width and Wrap, complete rows keep aligned columns and an incomplete final row expands evenly to fill the list.
 
 Every `positions.top`, `positions.bottom`, `positions.left`, and `positions.right` entry accepts the same three optional overrides:
 
