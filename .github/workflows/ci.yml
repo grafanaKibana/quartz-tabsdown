@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      OBSIDIAN_TABSDOWN_SHA: 630e1983dfbbcf4e40c84bb6da194f977b083d8b
+      OBSIDIAN_TABSDOWN_SHA: 654903611ff36172e037f4f11f31e66adfc059b4
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

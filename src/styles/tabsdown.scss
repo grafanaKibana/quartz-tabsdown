@@ -20,7 +20,7 @@
     100%,
     max(
       var(--tabsdown-tab-min-size),
-      calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))
+      calc(6em + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))
     )
   );
 

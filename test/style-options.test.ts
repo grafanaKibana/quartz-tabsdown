@@ -377,8 +377,9 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain(".tabsdown__tab-reserve--icon");
     expect(styles).not.toContain("grid-template-columns");
     expect(styles).toContain(
-      "calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))",
+      "calc(6em + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))",
     );
+    expect(styles).not.toContain("12ch + var(--tabsdown-tab-padding-inline)");
     expect(styles).toContain("flex: 1 1 var(--tabsdown-equal-wrap-basis)");
     expect(styles).toContain("inline-size: auto");
     expect(styles).toContain("@media (any-pointer: coarse)");
