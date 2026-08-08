@@ -12,6 +12,7 @@ jobs:
   upstream-parity:
     runs-on: ubuntu-latest
     env:
+      GITHUB_TOKEN: ${{ github.token }}
       OBSIDIAN_TABSDOWN_SHA: 836a75b6199def6752025afb38f041624fb4f1ca
     steps:
       - uses: actions/checkout@v4
