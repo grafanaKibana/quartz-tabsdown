@@ -467,7 +467,16 @@
   display: grid;
   grid-template-columns: repeat(
     auto-fit,
-    minmax(min(100%, max(var(--tabsdown-tab-min-size), 12ch)), 1fr)
+    minmax(
+      min(
+        100%,
+        max(
+          var(--tabsdown-tab-min-size),
+          calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))
+        )
+      ),
+      1fr
+    )
   );
 }
 
@@ -766,7 +775,16 @@
     display: grid;
     grid-template-columns: repeat(
       auto-fit,
-      minmax(min(100%, max(var(--tabsdown-tab-min-size), 12ch)), 1fr)
+      minmax(
+        min(
+          100%,
+          max(
+            var(--tabsdown-tab-min-size),
+            calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))
+          )
+        ),
+        1fr
+      )
     );
   }
 

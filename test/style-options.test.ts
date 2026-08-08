@@ -376,7 +376,9 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain("font-weight: 700");
     expect(styles).toContain(".tabsdown__tab-reserve--icon");
     expect(styles).toContain("display: grid");
-    expect(styles).toContain("minmax(min(100%, max(var(--tabsdown-tab-min-size), 12ch)), 1fr)");
+    expect(styles).toContain(
+      "calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))",
+    );
     expect(styles).toContain("@media (any-pointer: coarse)");
     expect(nested).not.toContain("--tabsdown-tab-underline-color");
     expect(nested).not.toContain("--tabsdown-rail-selected-background");
