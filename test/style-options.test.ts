@@ -52,7 +52,7 @@ describe("resolveTabsdownStyles", () => {
       sideWidth: 192,
       iconSize: 16,
       iconSpacing: 6,
-      selectedFontWeight: "theme-default",
+      selectedFontWeight: "default",
       nestedStyle: "card",
       positions: {
         top: { personality: "inherit", palette: "inherit", alignment: "inherit" },
@@ -237,7 +237,7 @@ describe("style settings contract and output helpers", () => {
       styles: {
         size: "compact",
         themeButtonOutline: true,
-        selectedFontWeight: "bold",
+        selectedFontWeight: "bolder",
         positions: {
           top: { personality: "underline", palette: "secondary" },
           left: { alignment: "equal-width" },
@@ -252,7 +252,7 @@ describe("style settings contract and output helpers", () => {
       "tabsdown-overflow-scroll",
       "tabsdown-palette-primary",
       "tabsdown-alignment-start",
-      "tabsdown-selected-font-weight-bold",
+      "tabsdown-selected-font-weight-bolder",
       "tabsdown-nested-style-card",
       "tabsdown-theme-button-outline",
       "tabsdown-animations-disabled",
@@ -300,7 +300,8 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain(".tabsdown--right.tabsdown-underline-placement-auto");
     expect(styles).toContain(".tabsdown.tabsdown-underline-placement-top");
     expect(styles).toContain(".tabsdown.tabsdown-underline-placement-bottom");
-    expect(styles).toContain(".tabsdown__tab:not([hidden]) ~ .tabsdown__tab:not([hidden])");
+    expect(styles).toContain('.tabsdown__separator[data-axis="inline"]');
+    expect(styles).toContain("block-size: min(1cap");
     expect(styles).toContain("@container (max-width: 28rem)");
     const containerStart = styles.indexOf("@container (max-width: 28rem)");
     const narrow = styles.slice(containerStart, styles.indexOf("@keyframes", containerStart));
@@ -342,27 +343,30 @@ describe("style settings contract and output helpers", () => {
     }
   });
 
-  test("targets direct side tablists at both top-level and nested container roots", () => {
-    const css = compileString(readFileSync("src/styles/tabsdown.scss", "utf8")).css;
-    const containerRule = /@container \(max-width: 28rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1];
-    const separatorSelector = /([^{}]+)\{[^{}]*--tabsdown-separator-inline-width/.exec(
-      containerRule ?? "",
-    )?.[1];
-    expect(separatorSelector).toBeDefined();
+  test("keeps rail spacing compact and side tabs equal width", () => {
+    const styles = readFileSync("src/styles/tabsdown.scss", "utf8");
+    const rail = /@mixin rail-personality \{([\s\S]*?)\n\}/.exec(styles)?.[1];
+    expect(rail).toContain("--tabsdown-tab-padding-block: 0.25rem");
+    expect(rail).toContain("--tabsdown-tablist-padding: 0.25rem");
+    expect(styles).toContain("inline-size: 100%");
+    expect(styles).toContain("flex: 1 1 0");
+  });
 
-    const fixture = document.createElement("div");
-    fixture.innerHTML = `
-      <div id="top" class="tabsdown tabsdown--left">
-        <div id="top-list" class="tabsdown__tablist"></div>
-        <div class="tabsdown__panels">
-          <div id="nested" class="tabsdown tabsdown--right">
-            <div id="nested-list" class="tabsdown__tablist"></div>
-          </div>
-        </div>
-      </div>
-    `;
-    const matches = Array.from(fixture.querySelectorAll(separatorSelector!.trim()), ({ id }) => id);
-
-    expect(matches).toEqual(["top-list", "nested-list"]);
+  test("normalizes legacy selected-weight values", () => {
+    expect(
+      resolveTabsdownStyles({
+        styles: { selectedFontWeight: "theme-default" },
+      } as unknown as TabsdownOptions).selectedFontWeight,
+    ).toBe("default");
+    expect(
+      resolveTabsdownStyles({
+        styles: { selectedFontWeight: "medium" },
+      } as unknown as TabsdownOptions).selectedFontWeight,
+    ).toBe("default");
+    expect(
+      resolveTabsdownStyles({
+        styles: { selectedFontWeight: "bold" },
+      } as unknown as TabsdownOptions).selectedFontWeight,
+    ).toBe("bolder");
   });
 });

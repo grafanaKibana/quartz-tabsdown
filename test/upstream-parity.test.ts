@@ -40,7 +40,7 @@ describe("upstream parity identity gate", () => {
 
   test("pins pull request and push parity while schedules track main", () => {
     expect(workflow).toContain("GITHUB_TOKEN: ${{ github.token }}");
-    expect(workflow).toContain("OBSIDIAN_TABSDOWN_SHA: cd3d7947acebf3494a3aac9f73c7da486d3b0c12");
+    expect(workflow).toContain("OBSIDIAN_TABSDOWN_SHA: a8d94b9b46648580874b2b7b83c8a1a838a2fac6");
     expect(workflow).toContain("github.event_name != 'schedule'");
     expect(workflow).toContain('npm run check:upstream -- "$OBSIDIAN_TABSDOWN_SHA"');
     expect(workflow).toContain("github.event_name == 'schedule'");

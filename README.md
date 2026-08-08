@@ -162,7 +162,7 @@ options:
     sideWidth: 192
     iconSize: 16
     iconSpacing: 6
-    selectedFontWeight: theme-default
+    selectedFontWeight: default
     nestedStyle: flat
     positions:
       top:
@@ -206,10 +206,13 @@ options:
 | `sideWidth`          | `192`–`320` px, step `8`                    | `192`                  |
 | `iconSize`           | `12`–`32` px                                | `16`                   |
 | `iconSpacing`        | `0`–`16` px                                 | `6`                    |
-| `selectedFontWeight` | `theme-default`, `medium`, `bold`           | `theme-default`        |
+| `selectedFontWeight` | `thinner`, `default`, `bolder`              | `default`              |
 | `nestedStyle`        | `card`, `flat`                              | `card`                 |
 | `motion.speed`       | `0`–`500` ms, step `20`                     | `160`                  |
 | `motion.disabled`    | boolean                                     | `false`                |
+
+Legacy `theme-default`, `medium`, and `bold` selected weights are normalized to `default`,
+`default`, and `bolder` at runtime.
 
 Every `positions.top`, `positions.bottom`, `positions.left`, and `positions.right` entry accepts the same three optional overrides:
 

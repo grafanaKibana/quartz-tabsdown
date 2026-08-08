@@ -44,6 +44,20 @@ function rectangle(height: number): DOMRect {
   };
 }
 
+function box(left: number, top: number, width: number, height: number): DOMRect {
+  return {
+    bottom: top + height,
+    height,
+    left,
+    right: left + width,
+    top,
+    width,
+    x: left,
+    y: top,
+    toJSON: () => ({}),
+  };
+}
+
 function animationControls(options?: {
   duration?: string;
   wrapperHeights?: Map<HTMLElement, () => number>;
@@ -172,6 +186,43 @@ describe("client script", () => {
       panels().map((panel) => panel.id),
     );
     expect(panels().every((panel) => panel.getAttribute("role") === "tabpanel")).toBe(true);
+  });
+
+  test("uses hidden DOM separators and follows ancestor style changes", async () => {
+    const tabList = document.querySelector<HTMLElement>(".tabsdown__tablist")!;
+    const buttons = tabs();
+    const separators = Array.from(
+      tabList.querySelectorAll<HTMLElement>(":scope > .tabsdown__separator"),
+    );
+    vi.spyOn(tabList, "getBoundingClientRect").mockReturnValue(box(0, 0, 100, 80));
+    vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(0, 0, 40, 20));
+    vi.spyOn(buttons[1]!, "getBoundingClientRect").mockReturnValue(box(44, 0, 40, 20));
+    vi.spyOn(buttons[2]!, "getBoundingClientRect").mockReturnValue(box(0, 28, 40, 20));
+
+    window.dispatchEvent(new Event("resize"));
+
+    expect(separators).toHaveLength(3);
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, false, true]);
+    expect(separators[1]!.getAttribute("aria-hidden")).toBe("true");
+    expect(separators[1]!.dataset.axis).toBe("inline");
+    expect([separators[1]!.style.left, separators[1]!.style.top]).toEqual(["42px", "10px"]);
+
+    vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(60, 0, 40, 20));
+    vi.spyOn(buttons[1]!, "getBoundingClientRect").mockReturnValue(box(16, 0, 40, 20));
+    window.dispatchEvent(new Event("resize"));
+    expect(separators[1]!.style.left).toBe("58px");
+
+    const sheet = document.head.appendChild(document.createElement("style"));
+    sheet.textContent = "body.separator-column .tabsdown__tablist { flex-direction: column; }";
+    vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(0, 0, 40, 20));
+    vi.spyOn(buttons[1]!, "getBoundingClientRect").mockReturnValue(box(0, 24, 40, 20));
+    vi.spyOn(buttons[2]!, "getBoundingClientRect").mockReturnValue(box(44, 0, 40, 20));
+    document.body.classList.add("separator-column");
+    await Promise.resolve();
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, false, true]);
+    expect(separators[1]!.dataset.axis).toBe("block");
+    document.body.classList.remove("separator-column");
+    sheet.remove();
   });
 
   test("shows only the first panel", () => {
@@ -566,6 +617,29 @@ describe("public mountTabs bridge", () => {
     expect(buttons.some((button) => button.hasAttribute("role"))).toBe(false);
     expect([first.hidden, second.hidden]).toEqual([true, true]);
     expect(root.contains(first) && root.contains(second)).toBe(true);
+  });
+
+  test("refreshes mounted separators when availability changes and removes them on destroy", () => {
+    const mounted = callerTabs();
+    const tabList = mounted.root.querySelector<HTMLElement>(".tabsdown__tablist")!;
+    const separators = Array.from(
+      tabList.querySelectorAll<HTMLElement>(":scope > .tabsdown__separator"),
+    );
+    vi.spyOn(tabList, "getBoundingClientRect").mockReturnValue(box(0, 0, 100, 20));
+    vi.spyOn(mounted.buttons[0]!, "getBoundingClientRect").mockReturnValue(box(0, 0, 40, 20));
+    vi.spyOn(mounted.buttons[1]!, "getBoundingClientRect").mockReturnValue(box(44, 0, 40, 20));
+
+    window.dispatchEvent(new Event("resize"));
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, false]);
+
+    mounted.controller.setAvailable("first", false);
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, true]);
+
+    mounted.controller.setAvailable("first", true);
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, false]);
+
+    mounted.controller.destroy();
+    expect(separators.every((separator) => !separator.isConnected)).toBe(true);
   });
 
   test("keeps nullable exclusive state and only notifies for user intent", () => {

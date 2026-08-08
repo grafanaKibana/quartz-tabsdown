@@ -4,7 +4,7 @@ export type TabsdownUnderlinePlacement = "auto" | "top" | "right" | "bottom" | "
 export type TabsdownOverflow = "scroll" | "wrap";
 export type TabsdownPalette = "primary" | "secondary";
 export type TabsdownAlignment = "start" | "center" | "equal-width";
-export type TabsdownSelectedFontWeight = "theme-default" | "medium" | "bold";
+export type TabsdownSelectedFontWeight = "thinner" | "default" | "bolder";
 export type TabsdownNestedStyle = "card" | "flat";
 export type TabsdownPosition = "top" | "bottom" | "left" | "right";
 export type TabsdownPositionPersonality = "inherit" | "button" | "underline" | "separator" | "rail";
@@ -233,11 +233,11 @@ export const STYLE_SETTINGS_CONTRACT = [
     path: "selectedFontWeight",
     id: "tabsdown-selected-font-weight",
     type: "class-select",
-    default: "tabsdown-selected-font-weight-theme-default",
+    default: "tabsdown-selected-font-weight-default",
     enums: [
-      "tabsdown-selected-font-weight-theme-default",
-      "tabsdown-selected-font-weight-medium",
-      "tabsdown-selected-font-weight-bold",
+      "tabsdown-selected-font-weight-thinner",
+      "tabsdown-selected-font-weight-default",
+      "tabsdown-selected-font-weight-bolder",
     ],
   },
   {
@@ -357,7 +357,7 @@ const GLOBAL_DEFAULTS: ResolvedTabsdownGlobalStyles = {
   sideWidth: 192,
   iconSize: 16,
   iconSpacing: 6,
-  selectedFontWeight: "theme-default",
+  selectedFontWeight: "default",
   nestedStyle: "card",
 };
 
@@ -599,12 +599,18 @@ function resolveGlobals(value: unknown, path: string): ResolvedTabsdownGlobalSty
       max: 16,
       step: 1,
     });
-  if (input.selectedFontWeight !== undefined)
-    result.selectedFontWeight = enumAt(input.selectedFontWeight, `${path}.selectedFontWeight`, [
-      "theme-default",
-      "medium",
-      "bold",
+  if (input.selectedFontWeight !== undefined) {
+    const legacy = { "theme-default": "default", medium: "default", bold: "bolder" } as const;
+    const weight =
+      typeof input.selectedFontWeight === "string" && input.selectedFontWeight in legacy
+        ? legacy[input.selectedFontWeight as keyof typeof legacy]
+        : input.selectedFontWeight;
+    result.selectedFontWeight = enumAt(weight, `${path}.selectedFontWeight`, [
+      "thinner",
+      "default",
+      "bolder",
     ]);
+  }
   if (input.nestedStyle !== undefined)
     result.nestedStyle = enumAt(input.nestedStyle, `${path}.nestedStyle`, ["card", "flat"]);
 

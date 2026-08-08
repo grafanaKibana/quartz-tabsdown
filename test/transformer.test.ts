@@ -213,9 +213,7 @@ describe("Tabsdown transformer", () => {
     expect(resources?.css?.[0]?.content).toContain(
       ".tabsdown--right.tabsdown-underline-placement-auto",
     );
-    expect(resources?.css?.[0]?.content).toContain(
-      ".tabsdown > .tabsdown__tablist > .tabsdown__tab:not([hidden])",
-    );
+    expect(resources?.css?.[0]?.content).toContain('.tabsdown__separator[data-axis="inline"]');
     expect(resources?.css?.[0]?.content).toContain(
       ".tabsdown--#{$position}.tabsdown-#{$position}-palette-secondary",
     );

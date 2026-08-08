@@ -18,6 +18,92 @@ function panelsOf(root: HTMLElement): HTMLElement[] {
   );
 }
 
+interface SeparatorOperation {
+  refresh: () => void;
+  destroy: () => void;
+}
+
+const separatorOperations = new Set<SeparatorOperation>();
+
+function setupSeparators(root: HTMLElement): SeparatorOperation {
+  const tabList = root.querySelector<HTMLElement>(":scope > .tabsdown__tablist")!;
+  const tabs = tabsOf(root);
+  const document = root.ownerDocument;
+  const view = document.defaultView;
+  const separators = tabs.map(() => {
+    const separator = document.createElement("span");
+    separator.className = "tabsdown__separator";
+    separator.setAttribute("aria-hidden", "true");
+    separator.hidden = true;
+    tabList.append(separator);
+    return separator;
+  });
+  const sameLane = (previous: DOMRect, current: DOMRect, column: boolean): boolean =>
+    column
+      ? Math.min(previous.right, current.right) - Math.max(previous.left, current.left) > 1
+      : Math.min(previous.bottom, current.bottom) - Math.max(previous.top, current.top) > 1;
+  const refresh = (): void => {
+    const column = view?.getComputedStyle(tabList).flexDirection.startsWith("column") ?? false;
+    const listRect = tabList.getBoundingClientRect();
+    let previous: DOMRect | undefined;
+    tabs.forEach((tab, index) => {
+      const separator = separators[index]!;
+      if (tab.hidden) {
+        separator.hidden = true;
+        return;
+      }
+      const current = tab.getBoundingClientRect();
+      if (!previous || !sameLane(previous, current, column)) {
+        separator.hidden = true;
+      } else {
+        separator.hidden = false;
+        separator.dataset.axis = column ? "block" : "inline";
+        const inlineMiddle =
+          current.left >= previous.right
+            ? (previous.right + current.left) / 2
+            : (previous.left + current.right) / 2;
+        separator.style.left = `${
+          (column ? (current.left + current.right) / 2 : inlineMiddle) -
+          listRect.left +
+          tabList.scrollLeft
+        }px`;
+        separator.style.top = `${
+          (column ? (previous.bottom + current.top) / 2 : (current.top + current.bottom) / 2) -
+          listRect.top +
+          tabList.scrollTop
+        }px`;
+      }
+      previous = current;
+    });
+  };
+  const observer = view?.ResizeObserver ? new view.ResizeObserver(refresh) : undefined;
+  observer?.observe(tabList);
+  tabs.forEach((tab) => observer?.observe(tab));
+  const mutations = view?.MutationObserver ? new view.MutationObserver(refresh) : undefined;
+  for (let element: Element | null = tabList; element; element = element.parentElement) {
+    mutations?.observe(element, {
+      attributes: true,
+      attributeFilter: ["class", "style", "dir"],
+    });
+  }
+  tabList.addEventListener("scroll", refresh);
+  view?.addEventListener("resize", refresh);
+  const operation: SeparatorOperation = {
+    refresh,
+    destroy: () => {
+      observer?.disconnect();
+      mutations?.disconnect();
+      tabList.removeEventListener("scroll", refresh);
+      view?.removeEventListener("resize", refresh);
+      separators.forEach((separator) => separator.remove());
+      separatorOperations.delete(operation);
+    },
+  };
+  separatorOperations.add(operation);
+  refresh();
+  return operation;
+}
+
 interface HeightOperation {
   frames: Set<number>;
   fallback: number;
@@ -400,6 +486,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
 
   root.append(tabList, panelsElement);
   container.append(root);
+  const separators = setupSeparators(root);
 
   let selection: string | null = null;
   let notifying = false;
@@ -414,6 +501,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
       tab.panel.hidden = !active;
     });
     root.classList.toggle("tabsdown--collapsed", selection === null);
+    separators.refresh();
   };
   const commit = (next: string | null, notify: boolean): void => {
     const previous = selection;
@@ -483,7 +571,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
       if (!tab || tab.available === available) return;
       tab.available = available;
       if (available) {
-        tab.button.hidden = false;
+        applyState();
         return;
       }
       if (activeElementNear(tab.button) === tab.button) {
@@ -509,6 +597,7 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
           (active, index) => active && isShadowIncludingAncestor(mountedTabs[index]!.panel, active),
         );
       heightOperations.get(panelsElement)?.cleanup();
+      separators.destroy();
       tabList.removeEventListener("click", onPublicClick);
       mountedTabs.forEach((tab) => {
         mountedPanels.delete(tab.panel);
@@ -586,6 +675,7 @@ function setup(root: HTMLElement): void {
   });
 
   root.dataset.tabsdown = "interactive";
+  setupSeparators(root);
   select(root, 0, false, false);
 }
 
@@ -655,6 +745,7 @@ document.addEventListener("nav", () => {
     Array.from(publicControllers).forEach((controller) => controller.destroy());
     Array.from(heightOperations.values()).forEach((operation) => operation.cleanup());
     heightOperations.clear();
+    Array.from(separatorOperations).forEach((operation) => operation.destroy());
     document.removeEventListener("click", onClick);
     document.removeEventListener("keydown", onKeyDown);
   });
