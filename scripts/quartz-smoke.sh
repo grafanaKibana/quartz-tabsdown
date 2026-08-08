@@ -60,6 +60,7 @@ expect() {
     echo "  ok    $1"
   else
     echo "  FAIL  $1"
+    grep -o '<span class="tabsdown__tab-label">[^<]*</span>' "$html" | head -n 3 || true
     status=1
   fi
 }
@@ -78,7 +79,7 @@ expect "panels rendered" 'class="tabsdown__panel"'
 expect "block config applied" 'tabsdown--top tabsdown--multi'
 expect "Lucide icon inlined" 'tabsdown__tab-icon'
 expect "bounded label formatting rendered" '<span class="tabsdown__tab-label"><strong>Outer</strong></span>'
-expect "unsupported label syntax stayed literal" '\[Second\](https://example.test) &#x3C;img src=x>'
+expect "unsupported label syntax stayed literal" '\[Second\](https://example.test) &lt;img src=x>'
 expect "nested block rendered" 'tabsdown--top tabsdown--one'
 expect "no-JS panel labels present" 'class="tabsdown__panel-label"'
 expect "styles injected" '.tabsdown__tablist'
