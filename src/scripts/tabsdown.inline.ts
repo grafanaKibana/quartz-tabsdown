@@ -58,6 +58,10 @@ function setupSeparators(root: HTMLElement): SeparatorOperation {
       } else {
         separator.hidden = false;
         separator.dataset.axis = column ? "block" : "inline";
+        separator.style.setProperty(
+          "--tabsdown-separator-length",
+          `${(column ? current.width : current.height) * 0.8}px`,
+        );
         const inlineMiddle =
           current.left >= previous.right
             ? (previous.right + current.left) / 2
@@ -455,6 +459,11 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
     label.className = "tabsdown__tab-label";
     renderInlineLabel(label, tabLabels[index] ?? []);
     button.append(label);
+    const reserve = ownerDocument.createElement("span");
+    reserve.className = "tabsdown__tab-reserve";
+    reserve.setAttribute("aria-hidden", "true");
+    renderInlineLabel(reserve, tabLabels[index] ?? []);
+    button.append(reserve);
     tabList.append(button);
 
     const restore = new Map<string, string | null>(

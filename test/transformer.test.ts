@@ -17,6 +17,7 @@ describe("Tabsdown transformer", () => {
     expect(html).toContain('<div class="tabsdown__tablist">');
     expect(html).toContain('<button type="button" id="tabsdown-1-tab-0"');
     expect(html).toContain('<span class="tabsdown__tab-label">First</span>');
+    expect(html).toContain('<span class="tabsdown__tab-reserve" aria-hidden="true">First</span>');
     expect(html).toContain('<div id="tabsdown-1-panel-0" class="tabsdown__panel"');
     expect(html).toContain("Hello <strong>world</strong>");
   });
@@ -37,7 +38,7 @@ describe("Tabsdown transformer", () => {
     );
 
     expect(html).not.toContain('role="tab');
-    expect(html).not.toContain("hidden");
+    expect(html).not.toContain(" hidden");
     expect(html).toContain('<div class="tabsdown__panel-label">First</div>');
     expect(html).toContain("alpha");
     expect(html).toContain("beta");
@@ -75,6 +76,7 @@ describe("Tabsdown transformer", () => {
 
     expect(html).toContain('<span class="tabsdown__tab-icon" aria-hidden="true"><svg');
     expect(html).toContain('<span class="tabsdown__tab-label">Notes</span>');
+    expect(html).toContain('class="tabsdown__tab-reserve tabsdown__tab-reserve--icon"');
     expect(html.match(/tabsdown__tab-icon/g)).toHaveLength(1);
   });
 
@@ -90,6 +92,9 @@ describe("Tabsdown transformer", () => {
 
     expect(html).toContain(
       '<span class="tabsdown__tab-label"><strong>Strong</strong> <em>Em</em> <del>Gone</del> <code>Code</code></span>',
+    );
+    expect(html).toContain(
+      '<span class="tabsdown__tab-reserve tabsdown__tab-reserve--icon" aria-hidden="true"><strong>Strong</strong> <em>Em</em> <del>Gone</del> <code>Code</code></span>',
     );
     expect(html).toContain(
       '<div class="tabsdown__panel-label"><strong>Strong</strong> <em>Em</em> <del>Gone</del> <code>Code</code></div>',
@@ -167,7 +172,7 @@ describe("Tabsdown transformer", () => {
     );
 
     expect(html).not.toContain('role="tab');
-    expect(html).not.toContain("hidden");
+    expect(html).not.toContain(" hidden");
     expect(html).toContain("tabsdown-personality-underline");
     expect(html).toContain('<div class="tabsdown__panel-label">First</div>');
     expect(html).toContain("alpha");

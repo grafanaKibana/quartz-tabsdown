@@ -301,7 +301,8 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain(".tabsdown.tabsdown-underline-placement-top");
     expect(styles).toContain(".tabsdown.tabsdown-underline-placement-bottom");
     expect(styles).toContain('.tabsdown__separator[data-axis="inline"]');
-    expect(styles).toContain("block-size: min(1cap");
+    expect(styles).toContain("block-size: var(--tabsdown-separator-length, 80%)");
+    expect(styles).toContain("inline-size: var(--tabsdown-separator-length, 80%)");
     expect(/@mixin underline-personality \{([\s\S]*?)\n\}/.exec(styles)?.[1]).toContain(
       "--tabsdown-button-selected-color: var(--tabsdown-tab-underline-color)",
     );
@@ -349,10 +350,31 @@ describe("style settings contract and output helpers", () => {
   test("keeps rail spacing compact and side tabs equal width", () => {
     const styles = readFileSync("src/styles/tabsdown.scss", "utf8");
     const rail = /@mixin rail-personality \{([\s\S]*?)\n\}/.exec(styles)?.[1];
-    expect(rail).toContain("--tabsdown-tab-padding-block: 0.25rem");
-    expect(rail).toContain("--tabsdown-tablist-padding: 0.25rem");
+    expect(rail).toContain("--tabsdown-tab-min-block-size: 36px");
+    expect(rail).toContain("--tabsdown-tab-padding-block: 0.125rem");
+    expect(rail).toContain("--tabsdown-tablist-padding: 0.375rem");
+    expect(rail).toContain(
+      "--tabsdown-button-selected-background: var(--tabsdown-rail-selected-background)",
+    );
+    expect(rail).toContain("--tabsdown-button-selected-color: var(--tabsdown-tab-selected-color)");
     expect(styles).toContain("inline-size: 100%");
     expect(styles).toContain("flex: 1 1 0");
+  });
+
+  test("keeps selected weight and wrapped equal-width geometry stable", () => {
+    const styles = readFileSync("src/styles/tabsdown.scss", "utf8");
+    const nested =
+      /\.tabsdown--nested-odd\.tabsdown,\n\.tabsdown--nested-even\.tabsdown \{([\s\S]*?)\n\}/.exec(
+        styles,
+      )?.[1];
+    expect(styles).toContain(".tabsdown__tab-reserve");
+    expect(styles).toContain("font-weight: 700");
+    expect(styles).toContain(".tabsdown__tab-reserve--icon");
+    expect(styles).toContain("display: grid");
+    expect(styles).toContain("minmax(min(100%, max(var(--tabsdown-tab-min-size), 12ch)), 1fr)");
+    expect(styles).toContain("@media (any-pointer: coarse)");
+    expect(nested).not.toContain("--tabsdown-tab-underline-color");
+    expect(nested).not.toContain("--tabsdown-rail-selected-background");
   });
 
   test("normalizes legacy selected-weight values", () => {

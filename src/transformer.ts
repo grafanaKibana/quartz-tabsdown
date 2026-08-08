@@ -137,6 +137,14 @@ function tabButton(tab: ParsedTab, blockId: string, index: number): RootContent 
     [
       ...(icon ? [icon] : []),
       element("span", { className: ["tabsdown__tab-label"] }, labelNodes(tab.label)),
+      element(
+        "span",
+        {
+          className: ["tabsdown__tab-reserve", ...(icon ? ["tabsdown__tab-reserve--icon"] : [])],
+          ariaHidden: "true",
+        },
+        labelNodes(tab.label),
+      ),
     ],
   );
 }

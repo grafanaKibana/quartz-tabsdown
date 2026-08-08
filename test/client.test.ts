@@ -185,6 +185,9 @@ describe("client script", () => {
     expect(tabs().map((tab) => tab.getAttribute("aria-controls"))).toEqual(
       panels().map((panel) => panel.id),
     );
+    expect(tabs()[0]!.querySelector(".tabsdown__tab-reserve")?.getAttribute("aria-hidden")).toBe(
+      "true",
+    );
     expect(panels().every((panel) => panel.getAttribute("role") === "tabpanel")).toBe(true);
   });
 
@@ -206,6 +209,7 @@ describe("client script", () => {
     expect(separators[1]!.getAttribute("aria-hidden")).toBe("true");
     expect(separators[1]!.dataset.axis).toBe("inline");
     expect([separators[1]!.style.left, separators[1]!.style.top]).toEqual(["42px", "10px"]);
+    expect(separators[1]!.style.getPropertyValue("--tabsdown-separator-length")).toBe("16px");
 
     vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(60, 0, 40, 20));
     vi.spyOn(buttons[1]!, "getBoundingClientRect").mockReturnValue(box(16, 0, 40, 20));
@@ -221,6 +225,7 @@ describe("client script", () => {
     await Promise.resolve();
     expect(separators.map((separator) => separator.hidden)).toEqual([true, false, true]);
     expect(separators[1]!.dataset.axis).toBe("block");
+    expect(separators[1]!.style.getPropertyValue("--tabsdown-separator-length")).toBe("32px");
     document.body.classList.remove("separator-column");
     sheet.remove();
   });
@@ -543,7 +548,12 @@ describe("public mountTabs bridge", () => {
     expect(buttons[0]!.querySelector(".tabsdown__tab-label")?.innerHTML).toBe(
       "<strong>Strong</strong> <em>Em</em> <del>Gone</del> <code>Code</code>",
     );
-    expect(buttons[1]!.textContent).toBe("[link](https://example.test) <img src=x> ****");
+    expect(buttons[0]!.querySelector(".tabsdown__tab-reserve")?.innerHTML).toBe(
+      buttons[0]!.querySelector(".tabsdown__tab-label")?.innerHTML,
+    );
+    expect(buttons[1]!.querySelector(".tabsdown__tab-label")?.textContent).toBe(
+      "[link](https://example.test) <img src=x> ****",
+    );
     expect(root.querySelector("a, img, script")).toBeNull();
 
     for (const tag of ["strong", "em", "del", "code"]) {
@@ -570,10 +580,9 @@ describe("public mountTabs bridge", () => {
 
     const tabList = container.querySelector<HTMLElement>(".tabsdown__tablist")!;
     expect(tabList.getAttribute("aria-label")).toBe("****");
-    expect(Array.from(tabList.querySelectorAll("button"), (button) => button.textContent)).toEqual([
-      "A",
-      "A",
-    ]);
+    expect(
+      Array.from(tabList.querySelectorAll(".tabsdown__tab-label"), (label) => label.textContent),
+    ).toEqual(["A", "A"]);
   });
 
   test("creates formatted controls in the target ownerDocument", () => {

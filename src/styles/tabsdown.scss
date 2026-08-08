@@ -12,6 +12,7 @@
   --tabsdown-underline-thickness: 2px;
   --tabsdown-animation-speed: 160ms;
   --tabsdown-tab-min-size: 44px;
+  --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
   --tabsdown-tab-padding-block: 0.5rem;
   --tabsdown-tab-padding-inline: var(--tabsdown-horizontal-padding);
 
@@ -25,6 +26,7 @@
   --tabsdown-tab-selected-border: var(--tabsdown-accent);
   --tabsdown-tab-selected-color: var(--light);
   --tabsdown-tab-underline-color: var(--tabsdown-accent);
+  --tabsdown-rail-selected-background: var(--tabsdown-accent);
   --tabsdown-animation-duration: var(--tabsdown-animation-speed);
   --tabsdown-tablist-justify: flex-start;
   --tabsdown-tab-flex: 0 0 auto;
@@ -186,9 +188,10 @@
 
 .tabsdown__tab {
   flex: var(--tabsdown-tab-flex);
+  display: block;
   box-sizing: border-box;
   min-inline-size: var(--tabsdown-tab-min-inline-size);
-  min-block-size: var(--tabsdown-tab-min-size);
+  min-block-size: var(--tabsdown-tab-min-block-size);
   padding: var(--tabsdown-tab-padding-block) var(--tabsdown-tab-padding-inline);
   border-style: solid;
   border-color: var(--tabsdown-button-border-color);
@@ -209,6 +212,18 @@
     background-color var(--tabsdown-animation-duration) ease,
     border-color var(--tabsdown-animation-duration) ease,
     color var(--tabsdown-animation-duration) ease;
+}
+
+.tabsdown__tab-reserve {
+  display: block;
+  block-size: 0;
+  overflow: hidden;
+  font-weight: 700;
+  visibility: hidden;
+}
+
+.tabsdown__tab-reserve--icon {
+  padding-inline-start: calc(var(--tabsdown-icon-size) + var(--tabsdown-icon-spacing));
 }
 
 .tabsdown__tab:hover {
@@ -240,14 +255,12 @@
 
 .tabsdown__separator[data-axis="inline"] {
   inline-size: var(--tabsdown-separator-width);
-  block-size: min(0.7em, calc(100% - 0.25rem));
-  block-size: min(1cap, calc(100% - 0.25rem));
+  block-size: var(--tabsdown-separator-length, 80%);
   transform: translate(-50%, -50%);
 }
 
 .tabsdown__separator[data-axis="block"] {
-  inline-size: min(0.7em, calc(100% - 0.25rem));
-  inline-size: min(1cap, calc(100% - 0.25rem));
+  inline-size: var(--tabsdown-separator-length, 80%);
   block-size: var(--tabsdown-separator-width);
   transform: translate(-50%, -50%);
 }
@@ -325,6 +338,7 @@
   --tabsdown-tab-selected-border: var(--tabsdown-accent);
   --tabsdown-tab-selected-color: var(--light);
   --tabsdown-tab-underline-color: var(--tabsdown-accent);
+  --tabsdown-rail-selected-background: var(--tabsdown-accent);
 }
 
 @mixin secondary-palette {
@@ -337,6 +351,7 @@
   --tabsdown-tab-selected-border: var(--gray);
   --tabsdown-tab-selected-color: var(--dark);
   --tabsdown-tab-underline-color: var(--dark);
+  --tabsdown-rail-selected-background: var(--highlight);
 }
 
 .tabsdown.tabsdown-palette-primary {
@@ -433,7 +448,50 @@
   }
 }
 
+.tabsdown:is(
+    .tabsdown-overflow-wrap:not(.tabsdown--inline-overflow),
+    .tabsdown--inline-overflow.tabsdown--multi
+  ):is(
+    .tabsdown--mounted.tabsdown-alignment-equal-width,
+    .tabsdown--top.tabsdown-alignment-equal-width:not(.tabsdown-top-alignment-start):not(
+        .tabsdown-top-alignment-center
+      ),
+    .tabsdown--top.tabsdown-top-alignment-equal-width,
+    .tabsdown--bottom.tabsdown-alignment-equal-width:not(.tabsdown-bottom-alignment-start):not(
+        .tabsdown-bottom-alignment-center
+      ),
+    .tabsdown--bottom.tabsdown-bottom-alignment-equal-width
+  )
+  > .tabsdown__tablist {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, max(var(--tabsdown-tab-min-size), 12ch)), 1fr)
+  );
+}
+
+.tabsdown:is(
+    .tabsdown-overflow-wrap:not(.tabsdown--inline-overflow),
+    .tabsdown--inline-overflow.tabsdown--multi
+  ):is(
+    .tabsdown--mounted.tabsdown-alignment-equal-width,
+    .tabsdown--top.tabsdown-alignment-equal-width:not(.tabsdown-top-alignment-start):not(
+        .tabsdown-top-alignment-center
+      ),
+    .tabsdown--top.tabsdown-top-alignment-equal-width,
+    .tabsdown--bottom.tabsdown-alignment-equal-width:not(.tabsdown-bottom-alignment-start):not(
+        .tabsdown-bottom-alignment-center
+      ),
+    .tabsdown--bottom.tabsdown-bottom-alignment-equal-width
+  )
+  > .tabsdown__tablist
+  > .tabsdown__tab {
+  flex: none;
+  min-inline-size: 0;
+}
+
 @mixin button-personality {
+  --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
   --tabsdown-separator-width: 0;
   --tabsdown-button-border-color: var(--tabsdown-tab-border);
   --tabsdown-button-border-top-width: 1px;
@@ -455,6 +513,7 @@
 }
 
 @mixin underline-personality {
+  --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
   --tabsdown-separator-width: 0;
   --tabsdown-button-border-color: transparent;
   --tabsdown-button-border-top-width: var(--tabsdown-underline-top-width);
@@ -476,6 +535,7 @@
 }
 
 @mixin separator-personality {
+  --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
   --tabsdown-separator-width: 1px;
   --tabsdown-button-border-color: transparent;
   --tabsdown-button-border-top-width: 0;
@@ -490,13 +550,14 @@
   --tabsdown-button-hover-color: var(--dark);
   --tabsdown-button-selected-border-color: transparent;
   --tabsdown-button-selected-background: transparent;
-  --tabsdown-button-selected-color: var(--dark);
+  --tabsdown-button-selected-color: var(--tabsdown-tab-underline-color);
   --tabsdown-tablist-background: transparent;
   --tabsdown-tablist-radius: 0;
   --tabsdown-tablist-padding: 0;
 }
 
 @mixin rail-personality {
+  --tabsdown-tab-min-block-size: 36px;
   --tabsdown-separator-width: 0;
   --tabsdown-button-border-color: transparent;
   --tabsdown-button-border-top-width: 0;
@@ -510,12 +571,12 @@
   --tabsdown-button-hover-background: transparent;
   --tabsdown-button-hover-color: var(--dark);
   --tabsdown-button-selected-border-color: transparent;
-  --tabsdown-button-selected-background: var(--highlight);
-  --tabsdown-button-selected-color: var(--dark);
+  --tabsdown-button-selected-background: var(--tabsdown-rail-selected-background);
+  --tabsdown-button-selected-color: var(--tabsdown-tab-selected-color);
   --tabsdown-tablist-background: var(--lightgray);
   --tabsdown-tablist-radius: var(--tabsdown-radius);
-  --tabsdown-tab-padding-block: 0.25rem;
-  --tabsdown-tablist-padding: 0.25rem;
+  --tabsdown-tab-padding-block: 0.125rem;
+  --tabsdown-tablist-padding: 0.375rem;
 }
 
 .tabsdown.tabsdown-personality-default {
@@ -604,6 +665,7 @@
   font-weight: 700;
 }
 
+/* Keep nested surfaces quiet without replacing palette-owned selection accents. */
 .tabsdown--nested-odd.tabsdown,
 .tabsdown--nested-even.tabsdown {
   --tabsdown-tab-background: var(--lightgray);
@@ -614,7 +676,6 @@
   --tabsdown-tab-selected-background: var(--highlight);
   --tabsdown-tab-selected-border: var(--gray);
   --tabsdown-tab-selected-color: var(--dark);
-  --tabsdown-tab-underline-color: var(--dark);
 }
 
 .tabsdown.tabsdown-animations-disabled {
@@ -682,6 +743,56 @@
     inline-size: auto;
     min-inline-size: var(--tabsdown-tab-min-size);
     white-space: normal;
+  }
+
+  .tabsdown:is(
+      .tabsdown-overflow-wrap:not(.tabsdown--inline-overflow),
+      .tabsdown--inline-overflow.tabsdown--multi
+    ):is(
+      .tabsdown--left.tabsdown-alignment-equal-width:not(.tabsdown-left-alignment-start):not(
+          .tabsdown-left-alignment-center
+        ),
+      .tabsdown--left.tabsdown-left-alignment-equal-width,
+      .tabsdown--right.tabsdown-alignment-equal-width:not(.tabsdown-right-alignment-start):not(
+          .tabsdown-right-alignment-center
+        ),
+      .tabsdown--right.tabsdown-right-alignment-equal-width
+    )
+    > .tabsdown__tablist {
+    display: grid;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(100%, max(var(--tabsdown-tab-min-size), 12ch)), 1fr)
+    );
+  }
+
+  .tabsdown:is(
+      .tabsdown-overflow-wrap:not(.tabsdown--inline-overflow),
+      .tabsdown--inline-overflow.tabsdown--multi
+    ):is(
+      .tabsdown--left.tabsdown-alignment-equal-width:not(.tabsdown-left-alignment-start):not(
+          .tabsdown-left-alignment-center
+        ),
+      .tabsdown--left.tabsdown-left-alignment-equal-width,
+      .tabsdown--right.tabsdown-alignment-equal-width:not(.tabsdown-right-alignment-start):not(
+          .tabsdown-right-alignment-center
+        ),
+      .tabsdown--right.tabsdown-right-alignment-equal-width
+    )
+    > .tabsdown__tablist
+    > .tabsdown__tab {
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+}
+
+@media (any-pointer: coarse) {
+  .tabsdown.tabsdown-personality-rail,
+  .tabsdown--top.tabsdown-top-personality-rail,
+  .tabsdown--bottom.tabsdown-bottom-personality-rail,
+  .tabsdown--left.tabsdown-left-personality-rail,
+  .tabsdown--right.tabsdown-right-personality-rail {
+    --tabsdown-tab-min-block-size: 44px;
   }
 }
 
