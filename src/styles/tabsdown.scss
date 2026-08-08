@@ -13,7 +13,8 @@
   --tabsdown-animation-speed: 160ms;
   --tabsdown-tab-min-size: 44px;
   --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
-  --tabsdown-tab-padding-block: 0.5rem;
+  --tabsdown-density-tab-padding-block: 0.5rem;
+  --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
   --tabsdown-tab-padding-inline: var(--tabsdown-horizontal-padding);
 
   --tabsdown-accent: var(--tabsdown-accent-override, var(--secondary));
@@ -374,12 +375,12 @@
 
 .tabsdown.tabsdown-density-compact {
   --tabsdown-tab-min-size: 32px;
-  --tabsdown-tab-padding-block: 0.375rem;
+  --tabsdown-density-tab-padding-block: 0.375rem;
 }
 
 .tabsdown.tabsdown-density-default {
   --tabsdown-tab-min-size: 44px;
-  --tabsdown-tab-padding-block: 0.5rem;
+  --tabsdown-density-tab-padding-block: 0.5rem;
 }
 
 .tabsdown.tabsdown-overflow-scroll {
@@ -492,6 +493,7 @@
 
 @mixin button-personality {
   --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
   --tabsdown-separator-width: 0;
   --tabsdown-button-border-color: var(--tabsdown-tab-border);
   --tabsdown-button-border-top-width: 1px;
@@ -514,6 +516,7 @@
 
 @mixin underline-personality {
   --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
   --tabsdown-separator-width: 0;
   --tabsdown-button-border-color: transparent;
   --tabsdown-button-border-top-width: var(--tabsdown-underline-top-width);
@@ -536,6 +539,7 @@
 
 @mixin separator-personality {
   --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
+  --tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block);
   --tabsdown-separator-width: 1px;
   --tabsdown-button-border-color: transparent;
   --tabsdown-button-border-top-width: 0;

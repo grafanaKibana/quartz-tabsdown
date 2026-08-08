@@ -294,6 +294,11 @@ describe("style settings contract and output helpers", () => {
       ]) {
         expect(mixin, `${personality}: ${property}`).toContain(property);
       }
+      if (personality !== "rail") {
+        expect(mixin).toContain(
+          "--tabsdown-tab-padding-block: var(--tabsdown-density-tab-padding-block)",
+        );
+      }
       expect(styles).toContain(`tabsdown-#{$position}-personality-${personality}`);
     }
     expect(styles).toContain(".tabsdown--left.tabsdown-underline-placement-auto");
