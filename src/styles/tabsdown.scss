@@ -215,6 +215,10 @@
     color var(--tabsdown-animation-duration) ease;
 }
 
+.tabsdown__tab[hidden] {
+  display: none;
+}
+
 .tabsdown__tab-reserve {
   display: block;
   block-size: 0;
@@ -252,6 +256,10 @@
   font-family: var(--bodyFont);
   font-size: 0.9rem;
   pointer-events: none;
+}
+
+.tabsdown__separator[hidden] {
+  display: none;
 }
 
 .tabsdown__separator[data-axis="inline"] {
@@ -815,6 +823,29 @@
   .tabsdown--left.tabsdown-left-personality-rail,
   .tabsdown--right.tabsdown-right-personality-rail {
     --tabsdown-tab-min-block-size: 44px;
+  }
+
+  .tabsdown--top:is(
+    .tabsdown-top-personality-button,
+    .tabsdown-top-personality-underline,
+    .tabsdown-top-personality-separator
+  ),
+  .tabsdown--bottom:is(
+    .tabsdown-bottom-personality-button,
+    .tabsdown-bottom-personality-underline,
+    .tabsdown-bottom-personality-separator
+  ),
+  .tabsdown--left:is(
+    .tabsdown-left-personality-button,
+    .tabsdown-left-personality-underline,
+    .tabsdown-left-personality-separator
+  ),
+  .tabsdown--right:is(
+    .tabsdown-right-personality-button,
+    .tabsdown-right-personality-underline,
+    .tabsdown-right-personality-separator
+  ) {
+    --tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size);
   }
 }
 

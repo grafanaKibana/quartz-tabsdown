@@ -380,6 +380,10 @@ describe("style settings contract and output helpers", () => {
       "calc(12ch + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))",
     );
     expect(styles).toContain("@media (any-pointer: coarse)");
+    expect(styles).toContain(".tabsdown__tab[hidden]");
+    expect(styles).toContain(".tabsdown__separator[hidden]");
+    expect(styles).toContain(".tabsdown-top-personality-button");
+    expect(styles).toContain("--tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size)");
     expect(nested).not.toContain("--tabsdown-tab-underline-color");
     expect(nested).not.toContain("--tabsdown-rail-selected-background");
   });
