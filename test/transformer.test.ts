@@ -16,6 +16,7 @@ describe("Tabsdown transformer", () => {
     expect(html).toContain("tabsdown--top tabsdown--one");
     expect(html).toContain('<div class="tabsdown__tablist">');
     expect(html).toContain('<button type="button" id="tabsdown-1-tab-0"');
+    expect(html).toContain('<span class="tabsdown__tab-content">');
     expect(html).toContain('<span class="tabsdown__tab-label">First</span>');
     expect(html).toContain('<span class="tabsdown__tab-reserve" aria-hidden="true">First</span>');
     expect(html).toContain('<div id="tabsdown-1-panel-0" class="tabsdown__panel"');

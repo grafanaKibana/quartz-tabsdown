@@ -87,12 +87,20 @@ function setupSeparators(root: HTMLElement): SeparatorOperation {
   if (view?.MutationObserver) {
     const observeAncestors = (): void => {
       mutations?.disconnect();
-      mutations?.observe(document as unknown as Node, { childList: true, subtree: true });
-      for (let element: Element | null = tabList; element; element = element.parentElement) {
-        mutations?.observe(element, {
-          attributes: true,
-          attributeFilter: ["class", "style", "dir"],
+      if (!tabList.isConnected) {
+        mutations?.observe(document as unknown as Node, { childList: true, subtree: true });
+      }
+      for (let node: Node | null = tabList; node;) {
+        mutations?.observe(node, {
+          childList: true,
+          ...(node.nodeType === 1
+            ? {
+                attributes: true,
+                attributeFilter: ["class", "style", "dir"],
+              }
+            : {}),
         });
+        node = node.parentNode ?? ("host" in node ? (node as ShadowRoot).host : null);
       }
     };
     mutations = new view.MutationObserver(() => {
@@ -466,15 +474,18 @@ function mountTabs(container: HTMLElement, options: MountTabsOptions): TabsContr
     button.type = "button";
     button.id = buttonId;
     button.className = "tabsdown__tab";
+    const content = ownerDocument.createElement("span");
+    content.className = "tabsdown__tab-content";
+    button.append(content);
     const label = ownerDocument.createElement("span");
     label.className = "tabsdown__tab-label";
     renderInlineLabel(label, tabLabels[index] ?? []);
-    button.append(label);
+    content.append(label);
     const reserve = ownerDocument.createElement("span");
     reserve.className = "tabsdown__tab-reserve";
     reserve.setAttribute("aria-hidden", "true");
     renderInlineLabel(reserve, tabLabels[index] ?? []);
-    button.append(reserve);
+    content.append(reserve);
     tabList.append(button);
 
     const restore = new Map<string, string | null>(

@@ -375,7 +375,10 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain(".tabsdown__tab-reserve");
     expect(styles).toContain("font-weight: 700");
     expect(styles).toContain(".tabsdown__tab-reserve--icon");
-    expect(styles).not.toContain("grid-template-columns");
+    expect(styles).toContain("display: inline-grid");
+    expect(styles).toContain("grid-area: 1 / 1 / 2 / -1");
+    expect(styles).not.toContain("block-size: 0");
+    expect(styles).not.toContain("grid-template-columns: repeat");
     expect(styles).toContain(
       "calc(6em + var(--tabsdown-tab-padding-inline) + var(--tabsdown-tab-padding-inline))",
     );

@@ -230,6 +230,18 @@ describe("client script", () => {
     sheet.remove();
   });
 
+  test("ignores unrelated nested document mutations", async () => {
+    const unrelated = document.body.appendChild(document.createElement("div"));
+    const nested = unrelated.appendChild(document.createElement("div"));
+    await Promise.resolve();
+    const measure = vi.spyOn(tabs()[0]!, "getBoundingClientRect");
+    measure.mockClear();
+
+    nested.append(document.createElement("span"));
+    await Promise.resolve();
+    expect(measure).not.toHaveBeenCalled();
+  });
+
   test("shows only the first panel", () => {
     expect(panels().map((panel) => panel.hidden)).toEqual([false, true, true]);
     expect(tabs().map((tab) => tab.getAttribute("aria-selected"))).toEqual([
@@ -550,6 +562,9 @@ describe("public mountTabs bridge", () => {
     );
     expect(buttons[0]!.querySelector(".tabsdown__tab-reserve")?.innerHTML).toBe(
       buttons[0]!.querySelector(".tabsdown__tab-label")?.innerHTML,
+    );
+    expect(buttons[0]!.querySelector(".tabsdown__tab-reserve")?.parentElement?.classList).toContain(
+      "tabsdown__tab-content",
     );
     expect(buttons[1]!.querySelector(".tabsdown__tab-label")?.textContent).toBe(
       "[link](https://example.test) <img src=x> ****",
