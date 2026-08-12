@@ -80,6 +80,7 @@ test.each(["Add vertical tabs", "feature: add vertical tabs", "feat add vertical
 );
 
 test("validates titles and releases main only after CI passes", () => {
+  expect(workflow).toContain("types: [opened, synchronize, reopened, edited]");
   expect(workflow).toContain('run: node scripts/version.mjs --next "$PR_TITLE"');
   expect(workflow).toContain("Version metadata is updated automatically after merge.");
   expect(workflow).toContain("needs: [version, upstream-parity, quartz-smoke, check]");
