@@ -9,6 +9,40 @@ on:
     - cron: "0 6 * * 1"
 
 jobs:
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Conventional Commit title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: node scripts/version.mjs --next "$PR_TITLE"
+
+  version:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      increased: ${{ steps.version.outputs.increased }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate release version
+        id: version
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          git show "$BASE_SHA:package-lock.json" > "$RUNNER_TEMP/package-lock.base.json"
+          result=$(node scripts/version.mjs --check "$RUNNER_TEMP/package-lock.base.json")
+          if [[ "$EVENT_NAME" == "pull_request" && "$result" == *"increased=true"* ]]; then
+            echo "::error::Version metadata is updated automatically after merge."
+            exit 1
+          fi
+          printf '%s\n' "$result" >> "$GITHUB_OUTPUT"
+
   upstream-parity:
     runs-on: ubuntu-latest
     env:
@@ -79,3 +113,62 @@ jobs:
           }
           console.log('dist/ externals verified: all imports are bundled or allowlisted.');
           "
+
+  release:
+    if: github.event_name == 'push'
+    needs: [version, upstream-parity, quartz-smoke, check]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create version commit and GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CURRENT_VERSION: ${{ needs.version.outputs.version }}
+          VERSION_INCREASED: ${{ needs.version.outputs.increased }}
+        run: |
+          set -euo pipefail
+
+          version="$CURRENT_VERSION"
+          automated=false
+          if [[ "$VERSION_INCREASED" != "true" ]]; then
+            title=$(gh api "repos/$GH_REPO/commits/$GITHUB_SHA/pulls" \
+              --jq 'map(select(.merged_at != null and .base.ref == "main")) | first | .title // empty')
+            if [[ -z "$title" ]]; then
+              echo "::error::The main commit is not associated with a merged pull request."
+              exit 1
+            fi
+            version=$(node scripts/version.mjs --next "$title")
+            automated=true
+          fi
+
+          if gh release view "$version" >/dev/null 2>&1; then
+            echo "Release $version already exists."
+            exit 0
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$version" >/dev/null 2>&1; then
+            gh release create "$version" --verify-tag --generate-notes --latest
+            exit 0
+          fi
+
+          if [[ "$automated" == "true" ]]; then
+            npm run version -- "$version"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package.json package-lock.json
+            git commit -m "chore: release $version [skip ci]"
+          fi
+
+          git tag "$version"
+          if [[ "$automated" == "true" ]]; then
+            git push --atomic origin HEAD:main "refs/tags/$version"
+          else
+            git push origin "refs/tags/$version"
+          fi
+          gh release create "$version" --verify-tag --generate-notes --latest
