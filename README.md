@@ -1,6 +1,14 @@
 # quartz-tabsdown
 
-Tabbed Markdown blocks for [Quartz](https://quartz.jzhao.xyz/), using the same syntax as the [Obsidian Tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) plugin. A vault that already authors `tabsdown` blocks publishes them as real tabs instead of leaking the raw fence into the built site.
+quartz-tabsdown renders [Tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) Markdown as theme-native tabs in [Quartz](https://quartz.jzhao.xyz/). The same fenced blocks work in Obsidian and on the published site.
+
+## What it does
+
+- Renders Markdown, links, embeds, callouts, math, and syntax highlighting inside tabs.
+- Supports nested tabs, formatted labels, Lucide icons, and tab lists on any side.
+- Matches Quartz light and dark themes, with optional appearance settings.
+- Keeps every panel readable when JavaScript is unavailable.
+- Exposes an optional browser API for custom Quartz components.
 
 ## Install
 
@@ -8,32 +16,19 @@ Tabbed Markdown blocks for [Quartz](https://quartz.jzhao.xyz/), using the same s
 npx quartz plugin add github:grafanaKibana/quartz-tabsdown
 ```
 
+Enable the plugin in `quartz.config.yaml`:
+
 ```yaml
-# quartz.config.yaml
 plugins:
   - source: github:grafanaKibana/quartz-tabsdown
     enabled: true
-    options:
-      styles:
-        personality: underline
-        gap: 8
 ```
 
-Or wire it up directly in `quartz.ts`:
-
-```typescript
-import { Tabsdown } from "quartz-tabsdown";
-
-transformers: [Tabsdown({ styles: { personality: "underline", gap: 8 } })];
-```
-
-All appearance options are optional and live under `options.styles`. Omit the object—or pass `styles: {}`—to use the Obsidian Style Settings defaults. Invalid names, enum values, colors, ranges, and slider steps fail the build with their complete configuration path.
-
-It declares `order: 10` so it runs **before** Obsidian Flavored Markdown. Tab bodies are parsed into the tree during this pass, and the transformers that follow then process them like any other content — that is what makes wikilinks, highlights, and callouts work inside a tab. Raising the order above OFM's silently degrades those: a wikilink inside a tab renders as a dead link and a callout as a plain blockquote.
+See [plugin configuration](docs/configuration.md) for `quartz.ts`, transformer order, and validation behavior.
 
 ## Syntax
 
-Start each tab with a column-zero `tab: <label>` marker. A block needs at least two non-empty, unique labels. Optional block configuration goes on a column-zero `config: <values>` line before the first tab; later position or layout values win.
+Start each tab with a column-zero `tab: <label>` marker. A block needs at least two non-empty, unique labels. Add optional block settings on a column-zero `config: <values>` line before the first tab.
 
 `````markdown
 ````tabsdown
@@ -53,15 +48,15 @@ console.log("Hello Tabsdown");
 ````
 `````
 
-Use matching backtick or tilde fences. The outer fence must be longer than every same-character fence inside it.
+`top`, `left`, `right`, and `bottom` place the tab list. `one` keeps labels on one scrollable line, while `multi` lets them wrap. Later position or layout values win.
 
-Tab bodies are parsed as Markdown before the rest of the pipeline runs, so links, embeds, callouts, math, and syntax highlighting all work inside a tab exactly as they do outside one.
+Use matching backtick or tilde fences. The outer fence must be longer than any matching fence inside it. Empty tab bodies are valid.
 
-Tab labels support a bounded, non-interactive subset: `**bold**`, `*italic*`, `~~strikethrough~~`, and backtick inline code. Multiple non-overlapping forms can share a label. Links, wikilinks, images, raw HTML, nested formatting, and malformed delimiters remain visible literal text.
+### Labels and icons
 
-### Icons
+Labels support `**bold**`, `*italic*`, `~~strikethrough~~`, and backtick inline code. Links, wikilinks, images, raw HTML, nested formatting, and malformed delimiters remain literal text.
 
-Start a label with `icon:<name>` to inline one of the bundled [Lucide](https://lucide.dev/icons/) icons:
+Start a label with `icon:<name>` to use a bundled [Lucide](https://lucide.dev/icons/) icon:
 
 ````markdown
 ```tabsdown
@@ -70,198 +65,35 @@ tab: icon:file-text Notes
 ```
 ````
 
-An unknown name renders nothing, and every tab still needs a label. Escape a literal label as `tab: \icon:name`, and a literal marker line as `\tab:`.
+An unknown icon name renders no icon. Escape a literal icon prefix as `tab: \icon:name` and a literal marker line as `\tab:`.
 
 ### Nested tabs
 
-A tab body can hold another `tabsdown` block, as long as its fence is shorter than the one around it.
+A tab body can contain another `tabsdown` block when its fence is shorter than the outer fence. Each level keeps its own active tab and configuration.
 
 ## Without JavaScript
 
-The emitted HTML carries no tab roles and hides no panels. Every panel is present and preceded by its own label, so the content reads top to bottom. The client script then adds the ARIA tab semantics, hides the inactive panels, and hides the per-panel labels — a page that fails to load it degrades to a plain labelled list rather than to one visible tab.
+Quartz emits every panel in source order with its label. The client script adds tab behavior and hides inactive panels only after it loads, so the content stays readable when JavaScript is disabled or fails.
 
-Tabs respond to pointer, touch, and keyboard (arrow keys, `Home`, `End`).
+## Guides
 
-## Mounting caller-owned panels
+- [Configure the Quartz plugin](docs/configuration.md)
+- [Customize appearance](docs/style-options.md)
+- [Mount panels from a custom Quartz component](docs/mounting-panels.md)
+- [Develop and verify quartz-tabsdown](docs/development.md)
 
-Custom Quartz components can use the browser bridge to place Tabsdown controls around live panels they already own. The API is optional because it is absent when the plugin or its client script is disabled; its public types are available from `quartz-tabsdown/types`.
+## Troubleshooting
 
-```typescript
-import type { TabsController, TabsdownRuntime } from "quartz-tabsdown/types";
-
-const runtime: TabsdownRuntime | undefined = window.tabsdown;
-let tabs: TabsController | undefined;
-
-if (runtime) {
-  tabs = runtime.mountTabs(container, {
-    label: "**Trace** details",
-    tabs: [
-      { id: "trace", label: "**Trace**", panel: tracePanel },
-      { id: "watch", label: "`Watch`", panel: watchPanel },
-    ],
-    selection: null,
-    onSelectionChange(selection, previous) {
-      console.log({ selection, previous });
-    },
-  });
-}
-
-tabs?.setSelection("trace");
-tabs?.setAvailable("watch", false);
-tabs?.destroy();
-```
-
-`selection` is nullable. User actions and availability-forced collapse call `onSelectionChange`; `setSelection` is silent. The returned controller also exposes its committed `selection` and can be destroyed repeatedly.
-
-The panels are moved, not cloned. Tabsdown preserves their existing accessible names and focus targets, and `destroy()` returns them to the container in the supplied order with their managed attributes and classes restored. Quartz SPA cleanup destroys outstanding mounts automatically while keeping `window.tabsdown` available for the next page.
-
-Mounted controls are a disclosure group built from native buttons with `aria-expanded`. They intentionally do not use the authored-fence ARIA tablist model or intercept arrow, `Home`, and `End` keys. Authored `tabsdown` fences nested inside a caller panel retain their normal tab behavior.
-
-A host adapter can pass the standalone function without binding it:
-
-```typescript
-st.mount(root, config, { mountTabs: window.tabsdown!.mountTabs });
-```
-
-## Malformed blocks
-
-A block that cannot be parsed renders a diagnostic with the message, the line, and the original source, instead of dropping the content.
-
-## Styling
-
-Styles are injected inline and resolve against Quartz's own theme variables, so tabs follow the active theme in both light and dark mode.
-
-Use `options.styles` for ordinary Tabsdown appearance. A minimal override is:
-
-```yaml
-options:
-  styles:
-    personality: underline
-    underlinePlacement: auto
-    gap: 8
-```
-
-A complete configuration matching the Obsidian contract is:
-
-```yaml
-options:
-  styles:
-    size: default
-    personality: underline
-    underlinePlacement: auto
-    overflow: scroll
-    palette: primary
-    accent: null
-    alignment: equal-width
-    themeButtonOutline: false
-    underlineThickness: 3
-    gap: 8
-    radius: 4
-    horizontalPadding: 36
-    contentSpacing: 12
-    sideWidth: 192
-    iconSize: 16
-    iconSpacing: 6
-    selectedFontWeight: default
-    nestedStyle: flat
-    positions:
-      top:
-        personality: inherit
-        palette: inherit
-        alignment: inherit
-      bottom:
-        personality: inherit
-        palette: inherit
-        alignment: inherit
-      left:
-        personality: inherit
-        palette: inherit
-        alignment: inherit
-      right:
-        personality: inherit
-        palette: inherit
-        alignment: inherit
-    motion:
-      speed: 300
-      disabled: false
-```
-
-### Schema
-
-| Key                  | Accepted values                             | Default                |
-| -------------------- | ------------------------------------------- | ---------------------- |
-| `size`               | `compact`, `default`                        | `default`              |
-| `personality`        | `default`, `underline`, `separator`, `rail` | `default`              |
-| `overflow`           | `scroll`, `wrap`                            | `scroll`               |
-| `palette`            | `primary`, `secondary`                      | `primary`              |
-| `accent`             | CSS color or `null`                         | `null` (Quartz accent) |
-| `alignment`          | `start`, `center`, `equal-width`            | `start`                |
-| `themeButtonOutline` | boolean                                     | `false`                |
-| `underlinePlacement` | `auto`, `top`, `right`, `bottom`, `left`    | `auto`                 |
-| `underlineThickness` | `1`–`8` px                                  | `2`                    |
-| `gap`                | `0`–`48` px                                 | `4`                    |
-| `radius`             | `0`–`24` px                                 | `4`                    |
-| `horizontalPadding`  | `0`–`48` px                                 | `36`                   |
-| `contentSpacing`     | `0`–`48` px                                 | `12`                   |
-| `sideWidth`          | `192`–`320` px, step `8`                    | `192`                  |
-| `iconSize`           | `12`–`32` px                                | `16`                   |
-| `iconSpacing`        | `0`–`16` px                                 | `6`                    |
-| `selectedFontWeight` | `thinner`, `default`, `bolder`              | `default`              |
-| `nestedStyle`        | `card`, `flat`                              | `card`                 |
-| `motion.speed`       | `0`–`500` ms, step `20`                     | `160`                  |
-| `motion.disabled`    | boolean                                     | `false`                |
-
-Legacy `theme-default`, `medium`, and `bold` selected weights are normalized to `default`,
-`default`, and `bolder` at runtime.
-
-Separator spans 80% of the adjacent tab height or width and is hidden at every wrapped row or column start. Rail uses a larger padded track with shorter desktop tabs while touch-capable devices retain 44px targets. Primary accents selected Separator text and the Rail segment; Secondary keeps the neutral treatment, including inside nested blocks. Tabs reserve an exact hidden copy of the formatted label at the bolder weight before selection. With Equal width and Wrap, complete rows keep aligned columns and an incomplete final row expands evenly to fill the list.
-
-Every `positions.top`, `positions.bottom`, `positions.left`, and `positions.right` entry accepts the same three optional overrides:
-
-| Position key  | Accepted values                                       | Default   |
-| ------------- | ----------------------------------------------------- | --------- |
-| `personality` | `inherit`, `button`, `underline`, `separator`, `rail` | `inherit` |
-| `palette`     | `inherit`, `primary`, `secondary`                     | `inherit` |
-| `alignment`   | `inherit`, `start`, `center`, `equal-width`           | `inherit` |
-
-`options.styles` is site-wide. A fenced block's `config: top|bottom|left|right, one|multi` marker still owns that block's structure and explicit overflow. Position overrides apply only to authored fences in the matching position. The public `mountTabs` runtime receives global styles and ignores position overrides.
-
-`motion.disabled: true` disables Tabsdown motion regardless of `motion.speed`. The reader's `prefers-reduced-motion` setting still disables it when the explicit toggle is false.
-
-Arbitrary one-off styling remains possible in Quartz `custom.scss`, but supported variants should use `options.styles`; consumers do not need to copy Tabsdown's stylesheet.
+- **A wikilink or callout renders incorrectly:** Keep Tabsdown before Obsidian Flavored Markdown. The default order is already correct.
+- **A block shows a diagnostic:** Check that `tab:` markers start at column zero, labels are unique, and the block has at least two tabs.
+- **An inner fence closes Tabsdown:** Make the outer fence longer than every matching fence inside it, or use tildes.
+- **The build rejects style options:** The error includes the invalid configuration path. Compare it with the [style schema](docs/style-options.md).
+- **Still stuck:** [Open an issue](https://github.com/grafanaKibana/quartz-tabsdown/issues) with the block, configuration, and Quartz version.
 
 ## Development
 
-```bash
-npm install
-npm run check
-```
-
-### Smoke-building against Quartz
-
-```bash
-npm run check:quartz
-```
-
-Clones Quartz's `v5` branch, installs this plugin into a throwaway site, builds it, and asserts on the emitted HTML — including that wikilinks, highlights, and callouts survive inside a tab, which only holds while this plugin runs before Obsidian Flavored Markdown. Quartz accepts only remote plugin sources, so this checks a pushed ref, not your working tree; pass one to test a branch (`npm run check:quartz -- 'github:grafanaKibana/quartz-tabsdown#my-branch'`).
-
-Quartz v5 has no release tag — it builds from a moving default branch — so CI runs this weekly as well as per push.
-
-### Staying in sync with obsidian-tabsdown
-
-```bash
-npm run check:upstream -- <40-character-obsidian-pr-head-sha>
-```
-
-`src/parser.ts` and `test/parser.test.ts` are vendored from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) so both plugins accept exactly the same syntax. The same machine-readable contract drives Quartz validation and the Style Settings parity check. This command builds the package, fetches upstream, and fails on any of:
-
-- a vendored file that no longer matches upstream, naming the first differing line;
-- an added, removed, or renamed Style Settings control;
-- a changed control type, default, enum value, range, step, or unit;
-- a numeric/color/toggle control with no corresponding plugin-owned CSS rule.
-
-Push and pull-request CI pins the exact 40-character Obsidian implementation SHA. The zero-argument `npm run check:upstream` maintenance path resolves `main` to an immutable commit and is reserved for the weekly drift check.
+See [development and verification](docs/development.md).
 
 ## License
 
-MIT
+[MIT](LICENSE)
