@@ -7,6 +7,29 @@ npm install
 npm run check
 ```
 
+## Releases
+
+Pull request titles use Conventional Commit syntax and determine the next release:
+
+| Title                          | Bump  |
+| ------------------------------ | ----- |
+| `fix: correct nested tabs`     | Patch |
+| `feat: add vertical tabs`      | Minor |
+| `feat!: replace the mount API` | Major |
+| `docs: explain configuration`  | Patch |
+
+Scopes are optional, such as `feat(ui): add vertical tabs`. CI rejects titles outside the
+`<type>[optional scope][!]: <description>` format. Supported types are `feat`, `fix`, `perf`,
+`refactor`, `docs`, `test`, `build`, `ci`, `chore`, `revert`, and `style`.
+
+After a pull request merges into `main` and CI passes, the workflow updates `package.json`,
+`package-lock.json`, and Quartz metadata, commits the version, creates the matching unprefixed
+tag, and publishes a GitHub release with generated notes. No manual version or release command is
+required, and pull requests must leave version metadata unchanged. Make the `pr-title` job a
+required status check. Repository Actions also need write access to contents and permission to
+update protected `main`. Merge one pull request at a time and wait for its release to finish before
+merging the next so version jobs cannot race.
+
 ## Smoke test against Quartz
 
 ```bash
