@@ -4,7 +4,7 @@
 
 ### Planned 0.4.0
 
-- Align the parser and configuration helpers with Obsidian Tabsdown, including keyed block settings, nested fence handling, and their upstream regression tests. Legacy bare position and layout settings remain supported.
+- Align the parser and configuration helpers with Obsidian Tabsdown, including keyed block settings, nested fence handling, and their upstream regression tests. Remove bare position and layout syntax: migrate `config: top, multi` to `config: position=top, layout=multi`.
 - Apply block density, personality, palette, and alignment ahead of site-wide and position-specific styles without affecting nested or sibling blocks.
 - Match Obsidian defaults: Rail personality, equal-width alignment, flat nested blocks, and Underline personality for left and right tabs. Explicit style options remain available for the previous appearance.
 - Apply the complete secondary palette to nested blocks so Rail selection keeps matching foreground and background colors.

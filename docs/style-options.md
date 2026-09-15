@@ -52,7 +52,7 @@ Partial position objects retain the default for every omitted key.
 
 ## Behavior notes
 
-- A fence's `config: top|bottom|left|right, one|multi` marker still controls its position and overflow.
+- A fence's `config: position=top|bottom|left|right, layout=one|multi` marker still controls its position and overflow.
 - `motion.disabled: true` disables motion regardless of speed. `prefers-reduced-motion` also disables it.
 - Separator uses 80%-length dividers between controls on the same row or column. Rail keeps 44 px touch targets.
 - Primary accents selected Separator text and the selected Rail segment. Secondary stays neutral, including in nested blocks.

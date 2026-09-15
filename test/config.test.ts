@@ -6,6 +6,10 @@ test.each(["constructor=value", "__proto__=value"])("rejects inherited-looking k
   expect(parseConfigToken(token)).toEqual({ kind: "invalid" }),
 );
 
+test.each(["top", "left", "right", "bottom", "one", "multi"])("rejects bare token %s", (token) =>
+  expect(parseConfigToken(token)).toEqual({ kind: "invalid" }),
+);
+
 describe("serializeConfig", () => {
   test("uses canonical option order", () => {
     expect(
@@ -36,8 +40,8 @@ describe("configEdit", () => {
     );
   });
 
-  test("migrates repeated legacy config lines and preserves the remainder", () => {
-    const source = "config: left\n\nconfig: multi\n\ntab: One\ntab: Two\n";
+  test("replaces multiple keyed config lines and preserves the remainder", () => {
+    const source = "config: position=left\n\nconfig: layout=multi\n\ntab: One\ntab: Two\n";
     const edit = configEdit(source, { position: "right" });
     expect(source.slice(0, edit.from) + edit.replacement + source.slice(edit.to)).toBe(
       "config: position=right\n\ntab: One\ntab: Two\n",

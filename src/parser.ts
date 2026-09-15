@@ -229,10 +229,6 @@ export function parseTabs(source: string): TabsParseResult {
         if (parsed.kind === "invalid") {
           return fail("invalid-config", `Unknown configuration value "${value}".`, lineNumber);
         }
-        if (parsed.kind === "bare") {
-          configuration.push(parsed.value);
-          continue;
-        }
         if (keyed.has(parsed.key)) {
           return fail("invalid-config", `Duplicate configuration key "${parsed.key}".`, lineNumber);
         }

@@ -18,11 +18,8 @@ export interface TabsdownConfig {
 export type KeyedConfigName = keyof TabsdownConfig;
 
 export type ParsedConfigToken =
-  | { kind: "bare"; value: TabConfiguration }
-  | { kind: "keyed"; key: KeyedConfigName; value: string }
-  | { kind: "invalid" };
+  { kind: "keyed"; key: KeyedConfigName; value: string } | { kind: "invalid" };
 
-const bareValues = new Set<TabConfiguration>(["top", "left", "right", "bottom", "one", "multi"]);
 const keyedValues: Record<KeyedConfigName, ReadonlySet<string>> = {
   position: new Set(["top", "left", "right", "bottom"]),
   layout: new Set(["one", "multi"]),
@@ -33,10 +30,6 @@ const keyedValues: Record<KeyedConfigName, ReadonlySet<string>> = {
 };
 
 export function parseConfigToken(token: string): ParsedConfigToken {
-  if (bareValues.has(token as TabConfiguration)) {
-    return { kind: "bare", value: token as TabConfiguration };
-  }
-
   const match = /^([a-z-]+)=([^=]+)$/.exec(token);
   if (!match) return { kind: "invalid" };
   const key = match[1] as KeyedConfigName;

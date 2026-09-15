@@ -1,12 +1,14 @@
 import { execFileSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { format, resolveConfig } from "prettier";
 import { parse } from "yaml";
 
 const REPOSITORY = "grafanaKibana/obsidian-tabsdown";
 const STYLESHEET = "src/styles/tabsdown.scss";
 
-/** Files copied verbatim from obsidian-tabsdown, compared after formatting. */
+/** Shared files compared after formatting and the explicit keyed-only syntax patch. */
 const VENDORED = [
   ["src/config.ts", "src/config.ts"],
   ["src/parser.ts", "src/parser.ts"],
@@ -67,23 +69,43 @@ async function fetchUpstream(path) {
 }
 
 async function checkVendoredFiles() {
-  for (const [upstreamPath, vendoredPath] of VENDORED) {
-    const config = await resolveConfig(vendoredPath);
-    const upstream = await format(await fetchUpstream(upstreamPath), {
-      ...config,
-      filepath: vendoredPath,
-    });
-    const vendored = await readFile(vendoredPath, "utf8");
-    if (upstream === vendored) continue;
+  const directory = await mkdtemp(join(tmpdir(), "quartz-tabsdown-parity-"));
+  try {
+    for (const [upstreamPath, vendoredPath] of VENDORED) {
+      const config = await resolveConfig(vendoredPath);
+      const upstream = await format(await fetchUpstream(upstreamPath), {
+        ...config,
+        filepath: vendoredPath,
+      });
+      const target = join(directory, vendoredPath);
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, upstream);
+    }
 
-    const upstreamLines = upstream.split("\n");
-    const vendoredLines = vendored.split("\n");
-    const at = vendoredLines.findIndex((line, index) => line !== upstreamLines[index]) + 1;
-    problems.push(
-      `${vendoredPath} drifted from obsidian-tabsdown ${upstreamPath} at line ${at}:\n` +
-        `      upstream: ${upstreamLines[at - 1] ?? "(end of file)"}\n` +
-        `      vendored: ${vendoredLines[at - 1] ?? "(end of file)"}`,
+    // Quartz requires key=value while this upstream revision still accepts bare tokens.
+    // Patch conflicts fail the check; changes outside the patch still compare exactly.
+    execFileSync(
+      "git",
+      ["apply", "--whitespace=error", resolve("scripts/upstream-keyed-config.patch")],
+      { cwd: directory, stdio: "pipe" },
     );
+
+    for (const [upstreamPath, vendoredPath] of VENDORED) {
+      const upstream = await readFile(join(directory, vendoredPath), "utf8");
+      const vendored = await readFile(vendoredPath, "utf8");
+      if (upstream === vendored) continue;
+
+      const upstreamLines = upstream.split("\n");
+      const vendoredLines = vendored.split("\n");
+      const at = vendoredLines.findIndex((line, index) => line !== upstreamLines[index]) + 1;
+      problems.push(
+        `${vendoredPath} drifted from patched obsidian-tabsdown ${upstreamPath} at line ${at}:\n` +
+          `      upstream: ${upstreamLines[at - 1] ?? "(end of file)"}\n` +
+          `      vendored: ${vendoredLines[at - 1] ?? "(end of file)"}`,
+      );
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 }
 
@@ -163,6 +185,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `In sync with ${REPOSITORY}@${resolvedSha}: ${VENDORED.length} vendored files identical and ` +
+  `In sync with ${REPOSITORY}@${resolvedSha}: ${VENDORED.length} files match after the keyed-only patch and ` +
     `${controls} Style Settings controls mapped with defaults, types, enums, ranges, steps, and units.`,
 );

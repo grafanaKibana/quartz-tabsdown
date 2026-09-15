@@ -47,7 +47,9 @@ describe("Tabsdown transformer", () => {
   });
 
   test("takes position and layout from the block's config marker", async () => {
-    const html = await render(fence(["config: left, multi", "", "tab: A", "tab: B"].join("\n")));
+    const html = await render(
+      fence(["config: position=left, layout=multi", "", "tab: A", "tab: B"].join("\n")),
+    );
 
     expect(html).toContain("tabsdown--left");
     expect(html).toContain("tabsdown--multi");
@@ -55,9 +57,9 @@ describe("Tabsdown transformer", () => {
     expect(html).not.toContain("tabsdown--top");
   });
 
-  test("lets a later config value win over an earlier one", async () => {
+  test("combines keyed values across leading config lines", async () => {
     const html = await render(
-      fence(["config: left", "config: bottom, multi", "", "tab: A", "tab: B"].join("\n")),
+      fence(["config: position=bottom", "config: layout=multi", "", "tab: A", "tab: B"].join("\n")),
     );
 
     expect(html).toContain("tabsdown--bottom");
@@ -128,6 +130,13 @@ describe("Tabsdown transformer", () => {
     const html = await render(fence("config: position=left, position=right\ntab: A\ntab: B"));
     expect(html).toContain('role="alert"');
     expect(html).toContain('Duplicate configuration key "position".');
+  });
+
+  test("renders a diagnostic for the removed bare config syntax", async () => {
+    const html = await render(fence("config: top, multi\ntab: A\ntab: B"));
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('Unknown configuration value "top".');
+    expect(html).not.toContain('class="tabsdown__tablist"');
   });
 
   test("preserves an explicit nested palette ahead of automatic secondary styling", async () => {
@@ -229,15 +238,18 @@ describe("Tabsdown transformer", () => {
   });
 
   test("applies validated global and position style modifiers without changing block config", async () => {
-    const html = await render(fence(["config: left, multi", "", "tab: A", "tab: B"].join("\n")), {
-      styles: {
-        size: "compact",
-        personality: "underline",
-        palette: "secondary",
-        positions: { left: { personality: "button", alignment: "center" } },
-        motion: { disabled: true },
+    const html = await render(
+      fence(["config: position=left, layout=multi", "", "tab: A", "tab: B"].join("\n")),
+      {
+        styles: {
+          size: "compact",
+          personality: "underline",
+          palette: "secondary",
+          positions: { left: { personality: "button", alignment: "center" } },
+          motion: { disabled: true },
+        },
       },
-    });
+    );
 
     expect(html).toContain("tabsdown-density-compact");
     expect(html).toContain("tabsdown-personality-underline");

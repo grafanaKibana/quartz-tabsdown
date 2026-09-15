@@ -52,7 +52,7 @@ console.log("Hello Tabsdown");
 
 Blocks can also override appearance with `density=default|compact`, `personality=button|underline|separator|rail`, `palette=primary|secondary`, and `alignment=start|center|equal-width`. These settings override site-wide and position-specific styles for that block; nested and sibling blocks keep their own settings.
 
-Legacy bare values such as `config: top, multi` remain supported. Later position or layout values win, but repeating a keyed setting is an error.
+Every configuration value must use `key=value` syntax. Bare values such as `config: top, multi` are rejected; use `config: position=top, layout=multi` instead. Repeating a key, including across multiple config lines, is an error.
 
 Use matching backtick or tilde fences. The outer fence must be longer than any matching fence inside it. Empty tab bodies are valid.
 

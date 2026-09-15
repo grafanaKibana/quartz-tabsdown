@@ -130,14 +130,26 @@ describe("parseTabs", () => {
     );
   });
 
-  test("accepts released bare position and layout tokens", () => {
-    expect(parseTabs("config: left\nconfig: multi\ntab: One\ntab: Two")).toEqual({
-      ok: true,
-      configuration: ["left", "multi"],
-      tabs: [
-        { label: "One", body: "" },
-        { label: "Two", body: "" },
-      ],
+  test.each([
+    "top",
+    "left",
+    "right",
+    "bottom",
+    "one",
+    "multi",
+    "top, multi",
+    "position=left, multi",
+  ])("rejects bare configuration values: %s", (config) => {
+    expect(parseTabs(`config: ${config}\ntab: One\ntab: Two`)).toMatchObject({
+      ok: false,
+      diagnostic: { code: "invalid-config", line: 1 },
+    });
+  });
+
+  test("rejects a bare value on a later config line", () => {
+    expect(parseTabs("config: position=left\nconfig: multi\ntab: One\ntab: Two")).toMatchObject({
+      ok: false,
+      diagnostic: { code: "invalid-config", line: 2 },
     });
   });
 
