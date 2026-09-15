@@ -1,0 +1,108 @@
+diff --git a/src/config.ts b/src/config.ts
+index ce22f16..2fc4b7c 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -18,11 +18,8 @@ export interface TabsdownConfig {
+ export type KeyedConfigName = keyof TabsdownConfig;
+ 
+ export type ParsedConfigToken =
+-  | { kind: "bare"; value: TabConfiguration }
+-  | { kind: "keyed"; key: KeyedConfigName; value: string }
+-  | { kind: "invalid" };
++  { kind: "keyed"; key: KeyedConfigName; value: string } | { kind: "invalid" };
+ 
+-const bareValues = new Set<TabConfiguration>(["top", "left", "right", "bottom", "one", "multi"]);
+ const keyedValues: Record<KeyedConfigName, ReadonlySet<string>> = {
+   position: new Set(["top", "left", "right", "bottom"]),
+   layout: new Set(["one", "multi"]),
+@@ -33,10 +30,6 @@ const keyedValues: Record<KeyedConfigName, ReadonlySet<string>> = {
+ };
+ 
+ export function parseConfigToken(token: string): ParsedConfigToken {
+-  if (bareValues.has(token as TabConfiguration)) {
+-    return { kind: "bare", value: token as TabConfiguration };
+-  }
+-
+   const match = /^([a-z-]+)=([^=]+)$/.exec(token);
+   if (!match) return { kind: "invalid" };
+   const key = match[1] as KeyedConfigName;
+diff --git a/src/parser.ts b/src/parser.ts
+index 809fb51..1d7e846 100644
+--- a/src/parser.ts
++++ b/src/parser.ts
+@@ -229,10 +229,6 @@ export function parseTabs(source: string): TabsParseResult {
+         if (parsed.kind === "invalid") {
+           return fail("invalid-config", `Unknown configuration value "${value}".`, lineNumber);
+         }
+-        if (parsed.kind === "bare") {
+-          configuration.push(parsed.value);
+-          continue;
+-        }
+         if (keyed.has(parsed.key)) {
+           return fail("invalid-config", `Duplicate configuration key "${parsed.key}".`, lineNumber);
+         }
+diff --git a/test/config.test.ts b/test/config.test.ts
+index 8595128..1790340 100644
+--- a/test/config.test.ts
++++ b/test/config.test.ts
+@@ -6,6 +6,10 @@ test.each(["constructor=value", "__proto__=value"])("rejects inherited-looking k
+   expect(parseConfigToken(token)).toEqual({ kind: "invalid" }),
+ );
+ 
++test.each(["top", "left", "right", "bottom", "one", "multi"])("rejects bare token %s", (token) =>
++  expect(parseConfigToken(token)).toEqual({ kind: "invalid" }),
++);
++
+ describe("serializeConfig", () => {
+   test("uses canonical option order", () => {
+     expect(
+@@ -36,8 +40,8 @@ describe("configEdit", () => {
+     );
+   });
+ 
+-  test("migrates repeated legacy config lines and preserves the remainder", () => {
+-    const source = "config: left\n\nconfig: multi\n\ntab: One\ntab: Two\n";
++  test("replaces multiple keyed config lines and preserves the remainder", () => {
++    const source = "config: position=left\n\nconfig: layout=multi\n\ntab: One\ntab: Two\n";
+     const edit = configEdit(source, { position: "right" });
+     expect(source.slice(0, edit.from) + edit.replacement + source.slice(edit.to)).toBe(
+       "config: position=right\n\ntab: One\ntab: Two\n",
+diff --git a/test/parser.test.ts b/test/parser.test.ts
+index 9509164..6c44890 100644
+--- a/test/parser.test.ts
++++ b/test/parser.test.ts
+@@ -130,14 +130,26 @@ describe("parseTabs", () => {
+     );
+   });
+ 
+-  test("accepts released bare position and layout tokens", () => {
+-    expect(parseTabs("config: left\nconfig: multi\ntab: One\ntab: Two")).toEqual({
+-      ok: true,
+-      configuration: ["left", "multi"],
+-      tabs: [
+-        { label: "One", body: "" },
+-        { label: "Two", body: "" },
+-      ],
++  test.each([
++    "top",
++    "left",
++    "right",
++    "bottom",
++    "one",
++    "multi",
++    "top, multi",
++    "position=left, multi",
++  ])("rejects bare configuration values: %s", (config) => {
++    expect(parseTabs(`config: ${config}\ntab: One\ntab: Two`)).toMatchObject({
++      ok: false,
++      diagnostic: { code: "invalid-config", line: 1 },
++    });
++  });
++
++  test("rejects a bare value on a later config line", () => {
++    expect(parseTabs("config: position=left\nconfig: multi\ntab: One\ntab: Two")).toMatchObject({
++      ok: false,
++      diagnostic: { code: "invalid-config", line: 2 },
+     });
+   });
+ 

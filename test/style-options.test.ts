@@ -37,11 +37,11 @@ describe("resolveTabsdownStyles", () => {
     expect(resolveTabsdownStyles({ styles: {} })).toEqual(defaults);
     expect(defaults).toEqual({
       size: "default",
-      personality: "default",
+      personality: "rail",
       overflow: "scroll",
       palette: "primary",
       accent: null,
-      alignment: "start",
+      alignment: "equal-width",
       themeButtonOutline: false,
       underlinePlacement: "auto",
       underlineThickness: 2,
@@ -53,12 +53,12 @@ describe("resolveTabsdownStyles", () => {
       iconSize: 16,
       iconSpacing: 6,
       selectedFontWeight: "default",
-      nestedStyle: "card",
+      nestedStyle: "flat",
       positions: {
         top: { personality: "inherit", palette: "inherit", alignment: "inherit" },
         bottom: { personality: "inherit", palette: "inherit", alignment: "inherit" },
-        left: { personality: "inherit", palette: "inherit", alignment: "inherit" },
-        right: { personality: "inherit", palette: "inherit", alignment: "inherit" },
+        left: { personality: "underline", palette: "inherit", alignment: "inherit" },
+        right: { personality: "underline", palette: "inherit", alignment: "inherit" },
       },
       motion: { speed: 160, disabled: false },
     });
@@ -95,6 +95,11 @@ describe("resolveTabsdownStyles", () => {
       personality: "separator",
       palette: "inherit",
       alignment: "center",
+    });
+    expect(resolved.positions.right).toEqual({
+      personality: "underline",
+      palette: "secondary",
+      alignment: "inherit",
     });
     expect(resolveTabsdownStyles({ styles: { accent: null } }).accent).toBeNull();
     expect(options.styles?.size).toBe("compact");
@@ -247,18 +252,20 @@ describe("style settings contract and output helpers", () => {
     });
     expect(tabsdownStyleClasses(resolved)).toEqual([
       "tabsdown-density-compact",
-      "tabsdown-personality-default",
+      "tabsdown-personality-rail",
       "tabsdown-underline-placement-auto",
       "tabsdown-overflow-scroll",
       "tabsdown-palette-primary",
-      "tabsdown-alignment-start",
+      "tabsdown-alignment-equal-width",
       "tabsdown-selected-font-weight-bolder",
-      "tabsdown-nested-style-card",
+      "tabsdown-nested-style-flat",
       "tabsdown-theme-button-outline",
       "tabsdown-animations-disabled",
       "tabsdown-top-personality-underline",
       "tabsdown-top-palette-secondary",
+      "tabsdown-left-personality-underline",
       "tabsdown-left-alignment-equal-width",
+      "tabsdown-right-personality-underline",
     ]);
   });
 
@@ -390,8 +397,7 @@ describe("style settings contract and output helpers", () => {
     expect(styles).toContain(".tabsdown__separator[hidden]");
     expect(styles).toContain(".tabsdown-top-personality-button");
     expect(styles).toContain("--tabsdown-tab-min-block-size: var(--tabsdown-tab-min-size)");
-    expect(nested).not.toContain("--tabsdown-tab-underline-color");
-    expect(nested).not.toContain("--tabsdown-rail-selected-background");
+    expect(nested).toContain("@include secondary-palette");
   });
 
   test("normalizes legacy selected-weight values", () => {

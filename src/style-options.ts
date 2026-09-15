@@ -98,7 +98,7 @@ export const STYLE_SETTINGS_CONTRACT = [
     path: "personality",
     id: "tabsdown-personality",
     type: "class-select",
-    default: "tabsdown-personality-default",
+    default: "tabsdown-personality-rail",
     enums: [
       "tabsdown-personality-default",
       "tabsdown-personality-underline",
@@ -125,7 +125,7 @@ export const STYLE_SETTINGS_CONTRACT = [
     path: "alignment",
     id: "tabsdown-alignment",
     type: "class-select",
-    default: "tabsdown-alignment-start",
+    default: "tabsdown-alignment-equal-width",
     enums: [
       "tabsdown-alignment-start",
       "tabsdown-alignment-center",
@@ -246,7 +246,7 @@ export const STYLE_SETTINGS_CONTRACT = [
     path: "nestedStyle",
     id: "tabsdown-nested-style",
     type: "class-select",
-    default: "tabsdown-nested-style-card",
+    default: "tabsdown-nested-style-flat",
     enums: ["tabsdown-nested-style-card", "tabsdown-nested-style-flat"],
   },
   ...(["top", "bottom", "left", "right"] as const).flatMap((position) => [
@@ -254,7 +254,9 @@ export const STYLE_SETTINGS_CONTRACT = [
       path: `positions.${position}.personality`,
       id: `tabsdown-${position}-personality`,
       type: "class-select" as const,
-      default: `tabsdown-${position}-personality-inherit`,
+      default: `tabsdown-${position}-personality-${
+        position === "left" || position === "right" ? "underline" : "inherit"
+      }`,
       enums: [
         `tabsdown-${position}-personality-inherit`,
         `tabsdown-${position}-personality-button`,
@@ -344,11 +346,11 @@ export interface ResolvedTabsdownStyles extends ResolvedTabsdownGlobalStyles {
 
 const GLOBAL_DEFAULTS: ResolvedTabsdownGlobalStyles = {
   size: "default",
-  personality: "default",
+  personality: "rail",
   overflow: "scroll",
   palette: "primary",
   accent: null,
-  alignment: "start",
+  alignment: "equal-width",
   themeButtonOutline: false,
   underlinePlacement: "auto",
   underlineThickness: 2,
@@ -360,13 +362,14 @@ const GLOBAL_DEFAULTS: ResolvedTabsdownGlobalStyles = {
   iconSize: 16,
   iconSpacing: 6,
   selectedFontWeight: "default",
-  nestedStyle: "card",
+  nestedStyle: "flat",
 };
 
-const POSITION_DEFAULTS: ResolvedTabsdownPositionStyles = {
-  personality: "inherit",
-  palette: "inherit",
-  alignment: "inherit",
+const POSITION_DEFAULTS: Record<TabsdownPosition, ResolvedTabsdownPositionStyles> = {
+  top: { personality: "inherit", palette: "inherit", alignment: "inherit" },
+  bottom: { personality: "inherit", palette: "inherit", alignment: "inherit" },
+  left: { personality: "underline", palette: "inherit", alignment: "inherit" },
+  right: { personality: "underline", palette: "inherit", alignment: "inherit" },
 };
 
 const MOTION_DEFAULTS: ResolvedTabsdownMotionStyles = {
@@ -619,13 +622,18 @@ function resolveGlobals(value: unknown, path: string): ResolvedTabsdownGlobalSty
   return result;
 }
 
-function resolvePosition(value: unknown, path: string): ResolvedTabsdownPositionStyles {
+function resolvePosition(
+  value: unknown,
+  position: TabsdownPosition,
+): ResolvedTabsdownPositionStyles {
+  const path = `options.styles.positions.${position}`;
+  const defaults = POSITION_DEFAULTS[position];
   const input = objectAt(value, path);
   knownKeys(input, path, ["personality", "palette", "alignment"]);
   return {
     personality:
       input.personality === undefined
-        ? POSITION_DEFAULTS.personality
+        ? defaults.personality
         : enumAt(input.personality, `${path}.personality`, [
             "inherit",
             "button",
@@ -635,11 +643,11 @@ function resolvePosition(value: unknown, path: string): ResolvedTabsdownPosition
           ]),
     palette:
       input.palette === undefined
-        ? POSITION_DEFAULTS.palette
+        ? defaults.palette
         : enumAt(input.palette, `${path}.palette`, ["inherit", "primary", "secondary"]),
     alignment:
       input.alignment === undefined
-        ? POSITION_DEFAULTS.alignment
+        ? defaults.alignment
         : enumAt(input.alignment, `${path}.alignment`, [
             "inherit",
             "start",
@@ -685,20 +693,20 @@ export function resolveTabsdownStyles(options: TabsdownOptions = {}): ResolvedTa
     positions: {
       top:
         positions.top === undefined
-          ? { ...POSITION_DEFAULTS }
-          : resolvePosition(positions.top, "options.styles.positions.top"),
+          ? { ...POSITION_DEFAULTS.top }
+          : resolvePosition(positions.top, "top"),
       bottom:
         positions.bottom === undefined
-          ? { ...POSITION_DEFAULTS }
-          : resolvePosition(positions.bottom, "options.styles.positions.bottom"),
+          ? { ...POSITION_DEFAULTS.bottom }
+          : resolvePosition(positions.bottom, "bottom"),
       left:
         positions.left === undefined
-          ? { ...POSITION_DEFAULTS }
-          : resolvePosition(positions.left, "options.styles.positions.left"),
+          ? { ...POSITION_DEFAULTS.left }
+          : resolvePosition(positions.left, "left"),
       right:
         positions.right === undefined
-          ? { ...POSITION_DEFAULTS }
-          : resolvePosition(positions.right, "options.styles.positions.right"),
+          ? { ...POSITION_DEFAULTS.right }
+          : resolvePosition(positions.right, "right"),
     },
     motion:
       styles.motion === undefined

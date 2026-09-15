@@ -50,11 +50,11 @@ CI also runs the smoke test weekly to catch Quartz changes.
 npm run check:upstream -- <40-character-obsidian-pr-head-sha>
 ```
 
-`src/parser.ts` and `test/parser.test.ts` are vendored from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown). The same machine-readable contract drives style validation.
+`src/parser.ts`, `src/config.ts`, and their tests are adapted from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown). Quartz requires keyed configuration syntax. The explicit `scripts/upstream-keyed-config.patch` removes upstream bare-token support after formatting; patch conflicts or any other file differences fail the check. The same machine-readable contract drives style validation.
 
 The check builds the package, fetches the requested upstream commit, and reports:
 
-- parser files that no longer match;
+- parser and configuration files that no longer match;
 - added, removed, or renamed Style Settings controls;
 - changed types, defaults, enum values, ranges, steps, or units;
 - numeric, color, or toggle controls without a plugin-owned CSS rule.

@@ -15,11 +15,11 @@ All keys are optional.
 | Key                  | Accepted values                             | Default                |
 | -------------------- | ------------------------------------------- | ---------------------- |
 | `size`               | `compact`, `default`                        | `default`              |
-| `personality`        | `default`, `underline`, `separator`, `rail` | `default`              |
+| `personality`        | `default`, `underline`, `separator`, `rail` | `rail`                 |
 | `overflow`           | `scroll`, `wrap`                            | `scroll`               |
 | `palette`            | `primary`, `secondary`                      | `primary`              |
 | `accent`             | CSS color or `null`                         | `null` (Quartz accent) |
-| `alignment`          | `start`, `center`, `equal-width`            | `start`                |
+| `alignment`          | `start`, `center`, `equal-width`            | `equal-width`          |
 | `themeButtonOutline` | boolean                                     | `false`                |
 | `underlinePlacement` | `auto`, `top`, `right`, `bottom`, `left`    | `auto`                 |
 | `underlineThickness` | `1`–`8` px                                  | `2`                    |
@@ -31,7 +31,7 @@ All keys are optional.
 | `iconSize`           | `12`–`32` px                                | `16`                   |
 | `iconSpacing`        | `0`–`16` px                                 | `6`                    |
 | `selectedFontWeight` | `thinner`, `default`, `bolder`              | `default`              |
-| `nestedStyle`        | `card`, `flat`                              | `card`                 |
+| `nestedStyle`        | `card`, `flat`                              | `flat`                 |
 | `motion.speed`       | `0`–`500` ms, step `20`                     | `160`                  |
 | `motion.disabled`    | boolean                                     | `false`                |
 
@@ -41,17 +41,18 @@ Legacy `theme-default`, `medium`, and `bold` selected weights are normalized to 
 
 Each `positions.top`, `positions.bottom`, `positions.left`, and `positions.right` object accepts:
 
-| Key           | Accepted values                                       | Default   |
-| ------------- | ----------------------------------------------------- | --------- |
-| `personality` | `inherit`, `button`, `underline`, `separator`, `rail` | `inherit` |
-| `palette`     | `inherit`, `primary`, `secondary`                     | `inherit` |
-| `alignment`   | `inherit`, `start`, `center`, `equal-width`           | `inherit` |
+| Key           | Accepted values                                       | Default                                          |
+| ------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| `personality` | `inherit`, `button`, `underline`, `separator`, `rail` | `inherit` (top/bottom); `underline` (left/right) |
+| `palette`     | `inherit`, `primary`, `secondary`                     | `inherit`                                        |
+| `alignment`   | `inherit`, `start`, `center`, `equal-width`           | `inherit`                                        |
 
 Position overrides apply only to authored fences in that position. The public `mountTabs` runtime uses global styles.
+Partial position objects retain the default for every omitted key.
 
 ## Behavior notes
 
-- A fence's `config: top|bottom|left|right, one|multi` marker still controls its position and overflow.
+- A fence's `config: position=top|bottom|left|right, layout=one|multi` marker still controls its position and overflow.
 - `motion.disabled: true` disables motion regardless of speed. `prefers-reduced-motion` also disables it.
 - Separator uses 80%-length dividers between controls on the same row or column. Rail keeps 44 px touch targets.
 - Primary accents selected Separator text and the selected Rail segment. Secondary stays neutral, including in nested blocks.

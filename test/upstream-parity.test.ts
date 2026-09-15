@@ -1,11 +1,38 @@
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 
 const script = readFileSync("scripts/check-upstream-parity.mjs", "utf8");
 const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
 
 describe("upstream parity identity gate", () => {
+  test("applies only the explicit keyed-only patch and rejects incompatible upstream context", () => {
+    const directory = mkdtempSync(join(tmpdir(), "quartz-keyed-patch-test-"));
+    const patch = resolve("scripts/upstream-keyed-config.patch");
+    const paths = ["src/config.ts", "src/parser.ts", "test/config.test.ts", "test/parser.test.ts"];
+    try {
+      for (const path of paths) {
+        mkdirSync(dirname(join(directory, path)), { recursive: true });
+        writeFileSync(join(directory, path), readFileSync(path));
+      }
+      execFileSync("git", ["apply", "--reverse", patch], { cwd: directory });
+      expect(readFileSync(join(directory, "src/config.ts"), "utf8")).toContain('kind: "bare"');
+      execFileSync("git", ["apply", "--whitespace=error", patch], { cwd: directory });
+      for (const path of paths) {
+        expect(readFileSync(join(directory, path), "utf8")).toBe(readFileSync(path, "utf8"));
+      }
+      execFileSync("git", ["apply", "--reverse", patch], { cwd: directory });
+      const config = join(directory, "src/config.ts");
+      writeFileSync(config, readFileSync(config, "utf8").replace('kind: "bare"', 'kind: "legacy"'));
+      const failed = spawnSync("git", ["apply", "--whitespace=error", patch], { cwd: directory });
+      expect(failed.status).not.toBe(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   test.each(["62819e6", "feature/issues-56-57", "z".repeat(40)])(
     "rejects non-exact commit identity %s before fetching",
     (reference) => {
@@ -40,7 +67,7 @@ describe("upstream parity identity gate", () => {
 
   test("pins pull request and push parity while schedules track main", () => {
     expect(workflow).toContain("GITHUB_TOKEN: ${{ github.token }}");
-    expect(workflow).toContain("OBSIDIAN_TABSDOWN_SHA: bd65bfa8adf800978ebaa32092619aa604576520");
+    expect(workflow).toContain("OBSIDIAN_TABSDOWN_SHA: 726ac26b0c1bcdf195eb0d6dfa13a49826c197eb");
     expect(workflow).toContain("github.event_name != 'schedule'");
     expect(workflow).toContain('npm run check:upstream -- "$OBSIDIAN_TABSDOWN_SHA"');
     expect(workflow).toContain("github.event_name == 'schedule'");

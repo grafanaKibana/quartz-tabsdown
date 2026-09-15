@@ -32,7 +32,7 @@ title: Smoke
 ---
 
 ````tabsdown
-config: top, multi
+config: position=top, layout=multi, density=compact, personality=separator, palette=secondary, alignment=center
 
 tab: icon:code **Outer**
 
@@ -77,6 +77,10 @@ echo "→ checking $html"
 expect "tab list rendered" 'class="tabsdown__tablist"'
 expect "panels rendered" 'class="tabsdown__panel"'
 expect "block config applied" 'tabsdown--top tabsdown--multi'
+expect "block density applied" 'tabsdown-density-compact'
+expect "block personality applied" 'tabsdown-personality-separator'
+expect "block palette applied" 'tabsdown-palette-secondary'
+expect "block alignment applied" 'tabsdown-alignment-center'
 expect "Lucide icon inlined" 'tabsdown__tab-icon'
 expect "bounded label formatting rendered" '<span class="tabsdown__tab-label"><strong>Outer</strong></span>'
 expect "unsupported label syntax stayed literal" '\[Second\](https://example.test) &lt;img src=x>'

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Planned 0.4.0
+
+- Align the parser and configuration helpers with Obsidian Tabsdown, including keyed block settings, nested fence handling, and their upstream regression tests. Remove bare position and layout syntax: migrate `config: top, multi` to `config: position=top, layout=multi`.
+- Apply block density, personality, palette, and alignment ahead of site-wide and position-specific styles without affecting nested or sibling blocks.
+- Match Obsidian defaults: Rail personality, equal-width alignment, flat nested blocks, and Underline personality for left and right tabs. Explicit style options remain available for the previous appearance.
+- Apply the complete secondary palette to nested blocks so Rail selection keeps matching foreground and background colors.
+- Pin push and pull-request parity checks to Obsidian commit `726ac26b0c1bcdf195eb0d6dfa13a49826c197eb` and include the shared configuration module and tests in drift detection.
+
 ## 0.2.0
 
 - Add typed, validated `options.styles` configuration with full Obsidian Style Settings parity, including global variants, position overrides, nested styling, motion controls, and mounted-tab support while retaining Quartz theme colors.

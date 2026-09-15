@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
 
@@ -46,7 +47,9 @@ describe("Tabsdown transformer", () => {
   });
 
   test("takes position and layout from the block's config marker", async () => {
-    const html = await render(fence(["config: left, multi", "", "tab: A", "tab: B"].join("\n")));
+    const html = await render(
+      fence(["config: position=left, layout=multi", "", "tab: A", "tab: B"].join("\n")),
+    );
 
     expect(html).toContain("tabsdown--left");
     expect(html).toContain("tabsdown--multi");
@@ -54,13 +57,104 @@ describe("Tabsdown transformer", () => {
     expect(html).not.toContain("tabsdown--top");
   });
 
-  test("lets a later config value win over an earlier one", async () => {
+  test("combines keyed values across leading config lines", async () => {
     const html = await render(
-      fence(["config: left", "config: bottom, multi", "", "tab: A", "tab: B"].join("\n")),
+      fence(["config: position=bottom", "config: layout=multi", "", "tab: A", "tab: B"].join("\n")),
     );
 
     expect(html).toContain("tabsdown--bottom");
     expect(html).not.toContain("tabsdown--left");
+  });
+
+  test.each(["button", "underline", "separator", "rail"])(
+    "applies keyed block settings with %s personality ahead of site and position styles",
+    async (personality) => {
+      const html = await render(
+        fence(
+          `config: position=left, layout=multi, density=compact, personality=${personality}, palette=secondary, alignment=center\ntab: A\ntab: B`,
+        ),
+        {
+          styles: {
+            personality: "rail",
+            positions: {
+              left: { personality: "underline", palette: "primary", alignment: "start" },
+            },
+          },
+        },
+      );
+      const root = new DOMParser().parseFromString(html, "text/html").querySelector(".tabsdown")!;
+      for (const name of [
+        "tabsdown--left",
+        "tabsdown--multi",
+        "tabsdown--inline-overflow",
+        "tabsdown-density-compact",
+        `tabsdown-personality-${personality === "button" ? "default" : personality}`,
+        "tabsdown-palette-secondary",
+        "tabsdown-alignment-center",
+      ]) {
+        expect(root.classList.contains(name)).toBe(true);
+      }
+      for (const name of [
+        "tabsdown-density-default",
+        "tabsdown-left-personality-underline",
+        "tabsdown-left-palette-primary",
+        "tabsdown-left-alignment-start",
+        "tabsdown-alignment-equal-width",
+      ]) {
+        expect(root.classList.contains(name)).toBe(false);
+      }
+    },
+  );
+
+  test("keeps block overrides local to each nested or sibling block", async () => {
+    const html = await render(
+      fence(
+        "config: density=compact, personality=button, palette=secondary, alignment=center\ntab: Outer\n```tabsdown\ntab: Inner A\ntab: Inner B\n```\ntab: Other",
+        "````",
+      ) + fence("tab: Sibling A\ntab: Sibling B"),
+    );
+    const roots = [
+      ...new DOMParser().parseFromString(html, "text/html").querySelectorAll(".tabsdown"),
+    ];
+    expect(roots).toHaveLength(3);
+    expect(roots[0]!.classList.contains("tabsdown-density-compact")).toBe(true);
+    for (const root of roots.slice(1)) {
+      expect(root.classList.contains("tabsdown-density-default")).toBe(true);
+      expect(root.classList.contains("tabsdown-personality-rail")).toBe(true);
+      expect(root.classList.contains("tabsdown-palette-primary")).toBe(true);
+      expect(root.classList.contains("tabsdown-alignment-equal-width")).toBe(true);
+    }
+  });
+
+  test("renders duplicate keyed settings as a diagnostic", async () => {
+    const html = await render(fence("config: position=left, position=right\ntab: A\ntab: B"));
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('Duplicate configuration key "position".');
+  });
+
+  test("renders a diagnostic for the removed bare config syntax", async () => {
+    const html = await render(fence("config: top, multi\ntab: A\ntab: B"));
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('Unknown configuration value "top".');
+    expect(html).not.toContain('class="tabsdown__tablist"');
+  });
+
+  test("preserves an explicit nested palette ahead of automatic secondary styling", async () => {
+    const html = await render(
+      fence(
+        "tab: Outer\n```tabsdown\nconfig: palette=primary\ntab: Inner A\ntab: Inner B\n```\ntab: Other",
+        "````",
+      ),
+    );
+    const document = new DOMParser().parseFromString(html, "text/html");
+    expect(
+      document
+        .querySelector(".tabsdown--nested-odd")!
+        .classList.contains("tabsdown--palette-primary"),
+    ).toBe(true);
+    expect(
+      document.querySelector("#tabsdown-1")!.classList.contains("tabsdown--palette-primary"),
+    ).toBe(false);
   });
 
   test("falls back to top and one without a config marker", async () => {
@@ -144,15 +238,18 @@ describe("Tabsdown transformer", () => {
   });
 
   test("applies validated global and position style modifiers without changing block config", async () => {
-    const html = await render(fence(["config: left, multi", "", "tab: A", "tab: B"].join("\n")), {
-      styles: {
-        size: "compact",
-        personality: "underline",
-        palette: "secondary",
-        positions: { left: { personality: "button", alignment: "center" } },
-        motion: { disabled: true },
+    const html = await render(
+      fence(["config: position=left, layout=multi", "", "tab: A", "tab: B"].join("\n")),
+      {
+        styles: {
+          size: "compact",
+          personality: "underline",
+          palette: "secondary",
+          positions: { left: { personality: "button", alignment: "center" } },
+          motion: { disabled: true },
+        },
       },
-    });
+    );
 
     expect(html).toContain("tabsdown-density-compact");
     expect(html).toContain("tabsdown-personality-underline");
@@ -293,7 +390,7 @@ describe("Tabsdown transformer", () => {
     const js = resources?.js?.[0];
     const configuredScript = js && "script" in js ? js.script : "";
 
-    expect(configuredScript).toContain("tabsdown-personality-default");
+    expect(configuredScript).toContain("tabsdown-personality-rail");
     expect(configuredScript).not.toContain("tabsdown-left-personality-underline");
   });
 });
