@@ -24,6 +24,7 @@ All keys are optional.
 | `underlinePlacement` | `auto`, `top`, `right`, `bottom`, `left`    | `auto`                 |
 | `underlineThickness` | `1`–`8` px                                  | `2`                    |
 | `gap`                | `0`–`48` px                                 | `4`                    |
+| `radiusMode`         | `auto`, `custom`                            | `auto`                 |
 | `radius`             | `0`–`24` px                                 | `4`                    |
 | `horizontalPadding`  | `0`–`48` px                                 | `36`                   |
 | `contentSpacing`     | `0`–`48` px                                 | `12`                   |
@@ -57,4 +58,6 @@ Partial position objects retain the default for every omitted key.
 - Separator uses 80%-length dividers between controls on the same row or column. Rail keeps 44 px touch targets.
 - Primary accents selected Separator text and the selected Rail segment. Secondary stays neutral, including in nested blocks.
 - Equal width with Wrap aligns complete rows and expands the final row.
+- `radiusMode: auto` uses a theme-supplied `--radius-s`, falling back to `4px` when the theme does not supply it. `custom` uses `radius`. For compatibility, setting `radius` without `radiusMode` selects Custom, including `radius: 0`; an explicit mode always wins and the radius value remains available.
+- Button uses the resolved radius on each tab row or column's outer corners and the theme baseline on inner corners. Rail uses the resolved radius outside and `max(0px, radius - 0.375rem)` inside, matching its fixed padding. Underline and Separator remain square.
 - Use Quartz `custom.scss` for one-off CSS. Supported variants should use `options.styles`.

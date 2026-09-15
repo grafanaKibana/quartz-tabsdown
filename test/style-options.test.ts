@@ -30,6 +30,10 @@ function valueAt(value: unknown, path: string): unknown {
     .reduce<unknown>((current, part) => (current as Record<string, unknown>)[part], value);
 }
 
+function classSettingValue(path: string, id: string, className: string): string {
+  return className.slice(`${path === "radiusMode" ? "tabsdown-radius" : id}-`.length);
+}
+
 describe("resolveTabsdownStyles", () => {
   test("resolves omitted and empty styles to all upstream defaults", () => {
     const defaults = resolveTabsdownStyles();
@@ -46,6 +50,7 @@ describe("resolveTabsdownStyles", () => {
       underlinePlacement: "auto",
       underlineThickness: 2,
       gap: 4,
+      radiusMode: "auto",
       radius: 4,
       horizontalPadding: 36,
       contentSpacing: 12,
@@ -61,6 +66,20 @@ describe("resolveTabsdownStyles", () => {
         right: { personality: "underline", palette: "inherit", alignment: "inherit" },
       },
       motion: { speed: 160, disabled: false },
+    });
+  });
+
+  test.each([
+    [undefined, "auto", 4],
+    [{ radius: 0 }, "custom", 0],
+    [{ radius: 12 }, "custom", 12],
+    [{ radius: 24 }, "custom", 24],
+    [{ radiusMode: "custom" as const }, "custom", 4],
+    [{ radiusMode: "auto" as const, radius: 12 }, "auto", 12],
+  ])("resolves compatible radius options %#", (styles, radiusMode, radius) => {
+    expect(resolveTabsdownStyles(styles === undefined ? undefined : { styles })).toMatchObject({
+      radiusMode,
+      radius,
     });
   });
 
@@ -122,6 +141,7 @@ describe("resolveTabsdownStyles", () => {
   test.each([
     [{ styles: { size: "tiny" } }, "options.styles.size"],
     [{ styles: { underlinePlacement: "center" } }, "options.styles.underlinePlacement"],
+    [{ styles: { radiusMode: "automatic" } }, "options.styles.radiusMode"],
     [
       { styles: { positions: { left: { personality: "default" } } } },
       "options.styles.positions.left.personality",
@@ -131,6 +151,9 @@ describe("resolveTabsdownStyles", () => {
     [{ styles: { sideWidth: 191 } }, "options.styles.sideWidth"],
     [{ styles: { sideWidth: 196 } }, "options.styles.sideWidth"],
     [{ styles: { underlineThickness: 8.5 } }, "options.styles.underlineThickness"],
+    [{ styles: { radius: -1 } }, "options.styles.radius"],
+    [{ styles: { radius: 25 } }, "options.styles.radius"],
+    [{ styles: { radius: Number.NaN } }, "options.styles.radius"],
     [{ styles: { motion: { speed: 30 } } }, "options.styles.motion.speed"],
     [{ styles: { motion: { speed: Number.NaN } } }, "options.styles.motion.speed"],
   ])("rejects invalid values at their exact path", (options, path) => {
@@ -170,9 +193,16 @@ describe("resolveTabsdownStyles", () => {
 });
 
 describe("style settings contract and output helpers", () => {
-  test("describes all 32 non-heading upstream controls exactly once", () => {
-    expect(STYLE_SETTINGS_CONTRACT).toHaveLength(32);
-    expect(new Set(STYLE_SETTINGS_CONTRACT.map(({ id }) => id))).toHaveLength(32);
+  test("describes all 33 non-heading upstream controls exactly once", () => {
+    expect(STYLE_SETTINGS_CONTRACT).toHaveLength(33);
+    expect(new Set(STYLE_SETTINGS_CONTRACT.map(({ id }) => id))).toHaveLength(33);
+    expect(STYLE_SETTINGS_CONTRACT).toContainEqual({
+      path: "radiusMode",
+      id: "tabsdown-radius-mode",
+      type: "class-select",
+      default: "tabsdown-radius-auto",
+      enums: ["tabsdown-radius-auto", "tabsdown-radius-custom"],
+    });
     expect(STYLE_SETTINGS_CONTRACT).toContainEqual({
       path: "underlinePlacement",
       id: "tabsdown-underline-placement",
@@ -204,7 +234,7 @@ describe("style settings contract and output helpers", () => {
     for (const setting of STYLE_SETTINGS_CONTRACT) {
       const expected =
         setting.type === "class-select"
-          ? setting.default.slice(`${setting.id}-`.length)
+          ? classSettingValue(setting.path, setting.id, setting.default)
           : setting.default;
       expect(valueAt(resolved, setting.path), setting.path).toBe(expected);
     }
@@ -215,7 +245,7 @@ describe("style settings contract and output helpers", () => {
       if (setting.type !== "class-select") continue;
 
       for (const className of setting.enums) {
-        const value = className.slice(`${setting.id}-`.length);
+        const value = classSettingValue(setting.path, setting.id, className);
         const classes = tabsdownStyleClasses(resolveTabsdownStyles(optionsAt(setting.path, value)));
         if (value === "inherit") {
           expect(classes, `${setting.path}=${value}`).not.toContain(className);
@@ -257,6 +287,7 @@ describe("style settings contract and output helpers", () => {
       "tabsdown-overflow-scroll",
       "tabsdown-palette-primary",
       "tabsdown-alignment-equal-width",
+      "tabsdown-radius-auto",
       "tabsdown-selected-font-weight-bolder",
       "tabsdown-nested-style-flat",
       "tabsdown-theme-button-outline",

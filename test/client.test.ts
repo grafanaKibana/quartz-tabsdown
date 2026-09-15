@@ -210,11 +210,40 @@ describe("client script", () => {
     expect(separators[1]!.dataset.axis).toBe("inline");
     expect([separators[1]!.style.left, separators[1]!.style.top]).toEqual(["42px", "10px"]);
     expect(separators[1]!.style.getPropertyValue("--tabsdown-separator-length")).toBe("16px");
+    expect(
+      buttons.map((button) => [
+        button.classList.contains("tabsdown__tab--line-start"),
+        button.classList.contains("tabsdown__tab--line-end"),
+      ]),
+    ).toEqual([
+      [true, false],
+      [false, true],
+      [true, true],
+    ]);
+    expect(tabList.classList.contains("tabsdown__tablist--column")).toBe(false);
 
+    buttons[1]!.hidden = true;
+    window.dispatchEvent(new Event("resize"));
+    expect(separators.map((separator) => separator.hidden)).toEqual([true, true, true]);
+    expect(
+      buttons.map((button) => [
+        button.classList.contains("tabsdown__tab--line-start"),
+        button.classList.contains("tabsdown__tab--line-end"),
+      ]),
+    ).toEqual([
+      [true, true],
+      [false, false],
+      [true, true],
+    ]);
+    buttons[1]!.hidden = false;
+
+    tabList.dir = "rtl";
     vi.spyOn(buttons[0]!, "getBoundingClientRect").mockReturnValue(box(60, 0, 40, 20));
     vi.spyOn(buttons[1]!, "getBoundingClientRect").mockReturnValue(box(16, 0, 40, 20));
     window.dispatchEvent(new Event("resize"));
     expect(separators[1]!.style.left).toBe("58px");
+    expect(buttons[0]!.classList.contains("tabsdown__tab--line-start")).toBe(true);
+    expect(buttons[1]!.classList.contains("tabsdown__tab--line-end")).toBe(true);
 
     const sheet = document.head.appendChild(document.createElement("style"));
     sheet.textContent = "body.separator-column .tabsdown__tablist { flex-direction: column; }";
@@ -226,8 +255,44 @@ describe("client script", () => {
     expect(separators.map((separator) => separator.hidden)).toEqual([true, false, true]);
     expect(separators[1]!.dataset.axis).toBe("block");
     expect(separators[1]!.style.getPropertyValue("--tabsdown-separator-length")).toBe("32px");
+    expect(tabList.classList.contains("tabsdown__tablist--column")).toBe(true);
+    expect(
+      buttons.map((button) => [
+        button.classList.contains("tabsdown__tab--line-start"),
+        button.classList.contains("tabsdown__tab--line-end"),
+      ]),
+    ).toEqual([
+      [true, false],
+      [false, true],
+      [true, true],
+    ]);
     document.body.classList.remove("separator-column");
     sheet.remove();
+  });
+
+  test("tracks the effective personality through position overrides", async () => {
+    const root = document.querySelector<HTMLElement>(".tabsdown")!;
+    const tabList = root.querySelector<HTMLElement>(":scope > .tabsdown__tablist")!;
+
+    expect(root.classList.contains("tabsdown--top")).toBe(true);
+    expect(tabList.classList.contains("tabsdown__tablist--rail")).toBe(true);
+    expect(tabList.classList.contains("tabsdown__tablist--button")).toBe(false);
+
+    root.classList.add("tabsdown-top-personality-button");
+    await Promise.resolve();
+    expect(tabList.classList.contains("tabsdown__tablist--button")).toBe(true);
+    expect(tabList.classList.contains("tabsdown__tablist--rail")).toBe(false);
+
+    root.classList.remove("tabsdown-top-personality-button");
+    root.classList.add("tabsdown-top-personality-underline");
+    await Promise.resolve();
+    expect(tabList.classList.contains("tabsdown__tablist--button")).toBe(false);
+    expect(tabList.classList.contains("tabsdown__tablist--rail")).toBe(false);
+
+    root.classList.remove("tabsdown-top-personality-underline", "tabsdown-personality-rail");
+    root.classList.add("tabsdown-personality-default");
+    await Promise.resolve();
+    expect(tabList.classList.contains("tabsdown__tablist--button")).toBe(true);
   });
 
   test("ignores unrelated nested document mutations", async () => {
@@ -523,9 +588,14 @@ describe("client script", () => {
     tabs()[1]?.click();
     const staleFrame = Array.from(controls.frames.values())[0]!;
     const oldWrapper = wrapper();
+    const oldTabList = document.querySelector<HTMLElement>(".tabsdown__tablist")!;
+    const oldTabs = tabs();
 
     runCleanups();
     expect(oldWrapper.style.height).toBe("");
+    expect(oldTabList.className).toBe("tabsdown__tablist");
+    expect(oldTabs.every((tab) => tab.className === "tabsdown__tab")).toBe(true);
+    expect(oldTabList.querySelector(".tabsdown__separator")).toBeNull();
     document.body.innerHTML = await render(markdown);
     staleFrame(0);
     expect(oldWrapper.style.height).toBe("");
@@ -655,15 +725,32 @@ describe("public mountTabs bridge", () => {
 
     window.dispatchEvent(new Event("resize"));
     expect(separators.map((separator) => separator.hidden)).toEqual([true, false]);
+    expect(tabList.classList.contains("tabsdown__tablist--button")).toBe(true);
+    expect(mounted.buttons[0]!.classList.contains("tabsdown__tab--line-start")).toBe(true);
+    expect(mounted.buttons[1]!.classList.contains("tabsdown__tab--line-end")).toBe(true);
 
     mounted.controller.setAvailable("first", false);
     expect(separators.map((separator) => separator.hidden)).toEqual([true, true]);
+    expect(mounted.buttons[0]!.classList.contains("tabsdown__tab--line-start")).toBe(false);
+    expect(mounted.buttons[0]!.classList.contains("tabsdown__tab--line-end")).toBe(false);
+    expect(mounted.buttons[1]!.classList.contains("tabsdown__tab--line-start")).toBe(true);
+    expect(mounted.buttons[1]!.classList.contains("tabsdown__tab--line-end")).toBe(true);
 
     mounted.controller.setAvailable("first", true);
     expect(separators.map((separator) => separator.hidden)).toEqual([true, false]);
 
     mounted.controller.destroy();
     expect(separators.every((separator) => !separator.isConnected)).toBe(true);
+    expect(tabList.classList.contains("tabsdown__tablist--rail")).toBe(false);
+    expect(tabList.classList.contains("tabsdown__tablist--button")).toBe(false);
+    expect(tabList.classList.contains("tabsdown__tablist--column")).toBe(false);
+    expect(
+      mounted.buttons.every(
+        (button) =>
+          !button.classList.contains("tabsdown__tab--line-start") &&
+          !button.classList.contains("tabsdown__tab--line-end"),
+      ),
+    ).toBe(true);
   });
 
   test("reconnects separator ancestors after a detached mount is attached", async () => {
