@@ -10,6 +10,7 @@ export type {
 export type {
   ParsedTab,
   TabConfiguration,
+  TabsdownConfig,
   TabsDiagnostic,
   TabsDiagnosticCode,
   TabsParseResult,

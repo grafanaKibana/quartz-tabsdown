@@ -8,6 +8,7 @@ import {
   parseTabs,
   type ParsedTab,
   type TabConfiguration,
+  type TabsdownConfig,
   type TabsDiagnostic,
 } from "./parser";
 import {
@@ -103,6 +104,20 @@ function resolveConfiguration(configuration: readonly TabConfiguration[]): TabCo
     }
   }
   return [position, layout];
+}
+
+function blockStyleClasses(styles: readonly string[], options: TabsdownConfig = {}): string[] {
+  let classes = [...styles];
+  for (const key of ["density", "personality", "palette", "alignment"] as const) {
+    const value = options[key];
+    if (value === undefined) continue;
+    // Block settings take precedence over both global and position defaults.
+    const setting = new RegExp(`^tabsdown-(?:(?:top|bottom|left|right)-)?${key}-`);
+    classes = classes.filter((name) => !setting.test(name));
+    classes.push(`tabsdown-${key}-${value === "button" ? "default" : value}`);
+    if (key === "palette") classes.push(`tabsdown--palette-${value}`);
+  }
+  return classes;
 }
 
 function diagnosticNode(diagnostic: TabsDiagnostic): RootContent {
@@ -207,7 +222,7 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
           return panelNode(tab, blockId, index, body.children);
         });
 
-        const classNames = ["tabsdown", ...styleClasses];
+        const classNames = ["tabsdown", ...blockStyleClasses(styleClasses, result.options)];
         if (depth > 0) {
           classNames.push(`tabsdown--nested-${depth % 2 === 1 ? "odd" : "even"}`);
         }

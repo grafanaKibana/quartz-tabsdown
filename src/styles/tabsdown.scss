@@ -678,17 +678,19 @@
   font-weight: 700;
 }
 
-/* Keep nested surfaces quiet without replacing palette-owned selection accents. */
+/* Obsidian gives nested blocks the secondary palette, including Rail selection. */
 .tabsdown--nested-odd.tabsdown,
 .tabsdown--nested-even.tabsdown {
-  --tabsdown-tab-background: var(--lightgray);
-  --tabsdown-tab-border: var(--lightgray);
-  --tabsdown-tab-color: var(--gray);
-  --tabsdown-tab-hover-background: var(--highlight);
-  --tabsdown-tab-hover-border: var(--gray);
-  --tabsdown-tab-selected-background: var(--highlight);
-  --tabsdown-tab-selected-border: var(--gray);
-  --tabsdown-tab-selected-color: var(--dark);
+  @include secondary-palette;
+}
+
+/* An authored block palette overrides the automatic nested palette. */
+.tabsdown.tabsdown--palette-primary {
+  @include primary-palette;
+}
+
+.tabsdown.tabsdown--palette-secondary {
+  @include secondary-palette;
 }
 
 .tabsdown.tabsdown-animations-disabled {

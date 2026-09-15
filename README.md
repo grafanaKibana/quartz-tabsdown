@@ -32,7 +32,7 @@ Start each tab with a column-zero `tab: <label>` marker. A block needs at least 
 
 `````markdown
 ````tabsdown
-config: top, multi
+config: position=top, layout=multi
 
 tab: **Python**
 
@@ -48,7 +48,11 @@ console.log("Hello Tabsdown");
 ````
 `````
 
-`top`, `left`, `right`, and `bottom` place the tab list. `one` keeps labels on one scrollable line, while `multi` lets them wrap. Later position or layout values win.
+`position=top|left|right|bottom` places the tab list. `layout=one` keeps labels on one scrollable line, while `layout=multi` lets them wrap.
+
+Blocks can also override appearance with `density=default|compact`, `personality=button|underline|separator|rail`, `palette=primary|secondary`, and `alignment=start|center|equal-width`. These settings override site-wide and position-specific styles for that block; nested and sibling blocks keep their own settings.
+
+Legacy bare values such as `config: top, multi` remain supported. Later position or layout values win, but repeating a keyed setting is an error.
 
 Use matching backtick or tilde fences. The outer fence must be longer than any matching fence inside it. Empty tab bodies are valid.
 
@@ -70,6 +74,8 @@ An unknown icon name renders no icon. Escape a literal icon prefix as `tab: \ico
 ### Nested tabs
 
 A tab body can contain another `tabsdown` block when its fence is shorter than the outer fence. Each level keeps its own active tab and configuration.
+
+Nested blocks default to the secondary palette, matching Obsidian. An explicit block `palette=` setting overrides that default.
 
 ## Without JavaScript
 

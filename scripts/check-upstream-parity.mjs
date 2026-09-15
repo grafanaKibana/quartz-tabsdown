@@ -8,7 +8,9 @@ const STYLESHEET = "src/styles/tabsdown.scss";
 
 /** Files copied verbatim from obsidian-tabsdown, compared after formatting. */
 const VENDORED = [
+  ["src/config.ts", "src/config.ts"],
   ["src/parser.ts", "src/parser.ts"],
+  ["tests/config.test.ts", "test/config.test.ts"],
   ["tests/parser.test.ts", "test/parser.test.ts"],
 ];
 
