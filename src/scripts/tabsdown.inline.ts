@@ -24,6 +24,40 @@ interface SeparatorOperation {
 }
 
 const separatorOperations = new Set<SeparatorOperation>();
+const lineStartClass = "tabsdown__tab--line-start";
+const lineEndClass = "tabsdown__tab--line-end";
+const columnClass = "tabsdown__tablist--column";
+const buttonClass = "tabsdown__tablist--button";
+const railClass = "tabsdown__tablist--rail";
+const positions = ["top", "bottom", "left", "right"] as const;
+const personalities = ["default", "underline", "separator", "rail"] as const;
+
+function effectivePersonality(root: HTMLElement): (typeof personalities)[number] {
+  const position = positions.find((value) => root.classList.contains(`tabsdown--${value}`));
+  if (position) {
+    const positioned = personalities.find((value) =>
+      root.classList.contains(
+        `tabsdown-${position}-personality-${value === "default" ? "button" : value}`,
+      ),
+    );
+    if (positioned) return positioned;
+  }
+  return (
+    personalities.find((value) => root.classList.contains(`tabsdown-personality-${value}`)) ??
+    "default"
+  );
+}
+
+function markLane(
+  tabs: readonly HTMLElement[],
+  starts: Set<HTMLElement>,
+  ends: Set<HTMLElement>,
+): void {
+  const first = tabs[0];
+  const last = tabs[tabs.length - 1];
+  if (first) starts.add(first);
+  if (last) ends.add(last);
+}
 
 function setupSeparators(root: HTMLElement): SeparatorOperation {
   const tabList = root.querySelector<HTMLElement>(":scope > .tabsdown__tablist")!;
@@ -43,9 +77,19 @@ function setupSeparators(root: HTMLElement): SeparatorOperation {
       ? Math.min(previous.right, current.right) - Math.max(previous.left, current.left) > 1
       : Math.min(previous.bottom, current.bottom) - Math.max(previous.top, current.top) > 1;
   const refresh = (): void => {
-    const column = view?.getComputedStyle(tabList).flexDirection.startsWith("column") ?? false;
+    const column =
+      (typeof view?.getComputedStyle === "function" &&
+        view.getComputedStyle(tabList).flexDirection.startsWith("column")) ||
+      false;
+    const personality = effectivePersonality(root);
+    tabList.classList.toggle(columnClass, column);
+    tabList.classList.toggle(buttonClass, personality === "default");
+    tabList.classList.toggle(railClass, personality === "rail");
     const listRect = tabList.getBoundingClientRect();
     let previous: DOMRect | undefined;
+    let lane: HTMLElement[] = [];
+    const starts = new Set<HTMLElement>();
+    const ends = new Set<HTMLElement>();
     tabs.forEach((tab, index) => {
       const separator = separators[index]!;
       if (tab.hidden) {
@@ -53,9 +97,15 @@ function setupSeparators(root: HTMLElement): SeparatorOperation {
         return;
       }
       const current = tab.getBoundingClientRect();
-      if (!previous || !sameLane(previous, current, column)) {
+      const startsLine = !previous || !sameLane(previous, current, column);
+      if (startsLine) {
+        markLane(lane, starts, ends);
+        lane = [];
+      }
+      lane.push(tab);
+      if (startsLine) {
         separator.hidden = true;
-      } else {
+      } else if (previous) {
         separator.hidden = false;
         separator.dataset.axis = column ? "block" : "inline";
         separator.style.setProperty(
@@ -78,6 +128,11 @@ function setupSeparators(root: HTMLElement): SeparatorOperation {
         }px`;
       }
       previous = current;
+    });
+    markLane(lane, starts, ends);
+    tabs.forEach((tab) => {
+      tab.classList.toggle(lineStartClass, starts.has(tab));
+      tab.classList.toggle(lineEndClass, ends.has(tab));
     });
   };
   const observer = view?.ResizeObserver ? new view.ResizeObserver(refresh) : undefined;
@@ -118,6 +173,8 @@ function setupSeparators(root: HTMLElement): SeparatorOperation {
       mutations?.disconnect();
       tabList.removeEventListener("scroll", refresh);
       view?.removeEventListener("resize", refresh);
+      tabList.classList.remove(columnClass, buttonClass, railClass);
+      tabs.forEach((tab) => tab.classList.remove(lineStartClass, lineEndClass));
       separators.forEach((separator) => separator.remove());
       separatorOperations.delete(operation);
     },

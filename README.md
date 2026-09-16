@@ -6,7 +6,7 @@ quartz-tabsdown renders [Tabsdown](https://github.com/grafanaKibana/obsidian-tab
 
 - Renders Markdown, links, embeds, callouts, math, and syntax highlighting inside tabs.
 - Supports nested tabs, formatted labels, Lucide icons, and tab lists on any side.
-- Matches Quartz light and dark themes, with optional appearance settings.
+- Matches Quartz light and dark themes, with theme-following or custom tab corner radii.
 - Keeps every panel readable when JavaScript is unavailable.
 - Exposes an optional browser API for custom Quartz components.
 

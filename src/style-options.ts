@@ -4,6 +4,7 @@ export type TabsdownUnderlinePlacement = "auto" | "top" | "right" | "bottom" | "
 export type TabsdownOverflow = "scroll" | "wrap";
 export type TabsdownPalette = "primary" | "secondary";
 export type TabsdownAlignment = "start" | "center" | "equal-width";
+export type TabsdownRadiusMode = "auto" | "custom";
 export type ResolvedTabsdownSelectedFontWeight = "thinner" | "default" | "bolder";
 export type TabsdownSelectedFontWeight =
   ResolvedTabsdownSelectedFontWeight | "theme-default" | "medium" | "bold";
@@ -24,6 +25,7 @@ export interface TabsdownGlobalStyleOptions {
   underlinePlacement?: TabsdownUnderlinePlacement;
   underlineThickness?: number;
   gap?: number;
+  radiusMode?: TabsdownRadiusMode;
   radius?: number;
   horizontalPadding?: number;
   contentSpacing?: number;
@@ -172,6 +174,13 @@ export const STYLE_SETTINGS_CONTRACT = [
     unit: "px",
   },
   {
+    path: "radiusMode",
+    id: "tabsdown-radius-mode",
+    type: "class-select",
+    default: "tabsdown-radius-auto",
+    enums: ["tabsdown-radius-auto", "tabsdown-radius-custom"],
+  },
+  {
     path: "radius",
     id: "tabsdown-radius",
     type: "variable-number-slider",
@@ -318,6 +327,7 @@ export interface ResolvedTabsdownGlobalStyles {
   underlinePlacement: TabsdownUnderlinePlacement;
   underlineThickness: number;
   gap: number;
+  radiusMode: TabsdownRadiusMode;
   radius: number;
   horizontalPadding: number;
   contentSpacing: number;
@@ -355,6 +365,7 @@ const GLOBAL_DEFAULTS: ResolvedTabsdownGlobalStyles = {
   underlinePlacement: "auto",
   underlineThickness: 2,
   gap: 4,
+  radiusMode: "auto",
   radius: 4,
   horizontalPadding: 36,
   contentSpacing: 12,
@@ -522,6 +533,7 @@ const globalKeys = [
   "underlinePlacement",
   "underlineThickness",
   "gap",
+  "radiusMode",
   "radius",
   "horizontalPadding",
   "contentSpacing",
@@ -578,6 +590,11 @@ function resolveGlobals(value: unknown, path: string): ResolvedTabsdownGlobalSty
     result.gap = numberAt(input.gap, `${path}.gap`, { min: 0, max: 48, step: 1 });
   if (input.radius !== undefined)
     result.radius = numberAt(input.radius, `${path}.radius`, { min: 0, max: 24, step: 1 });
+  if (input.radiusMode !== undefined) {
+    result.radiusMode = enumAt(input.radiusMode, `${path}.radiusMode`, ["auto", "custom"]);
+  } else if (input.radius !== undefined) {
+    result.radiusMode = "custom";
+  }
   if (input.horizontalPadding !== undefined)
     result.horizontalPadding = numberAt(input.horizontalPadding, `${path}.horizontalPadding`, {
       min: 0,
@@ -724,6 +741,7 @@ export function tabsdownStyleClasses(styles: ResolvedTabsdownStyles): string[] {
     `tabsdown-overflow-${styles.overflow}`,
     `tabsdown-palette-${styles.palette}`,
     `tabsdown-alignment-${styles.alignment}`,
+    `tabsdown-radius-${styles.radiusMode}`,
     `tabsdown-selected-font-weight-${styles.selectedFontWeight}`,
     `tabsdown-nested-style-${styles.nestedStyle}`,
   ];
