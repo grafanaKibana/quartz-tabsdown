@@ -10,6 +10,7 @@ const STYLESHEET = "src/styles/tabsdown.scss";
 
 /** Shared files compared after formatting and the explicit keyed-only syntax patch. */
 const VENDORED = [
+  ["src/syntax.ts", "src/syntax.ts"],
   ["src/config.ts", "src/config.ts"],
   ["src/parser.ts", "src/parser.ts"],
   ["tests/config.test.ts", "test/config.test.ts"],

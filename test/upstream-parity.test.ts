@@ -11,7 +11,13 @@ describe("upstream parity identity gate", () => {
   test("applies only the explicit keyed-only patch and rejects incompatible upstream context", () => {
     const directory = mkdtempSync(join(tmpdir(), "quartz-keyed-patch-test-"));
     const patch = resolve("scripts/upstream-keyed-config.patch");
-    const paths = ["src/config.ts", "src/parser.ts", "test/config.test.ts", "test/parser.test.ts"];
+    const paths = [
+      "src/syntax.ts",
+      "src/config.ts",
+      "src/parser.ts",
+      "test/config.test.ts",
+      "test/parser.test.ts",
+    ];
     try {
       for (const path of paths) {
         mkdirSync(dirname(join(directory, path)), { recursive: true });
@@ -57,6 +63,18 @@ describe("upstream parity identity gate", () => {
     expect(result.stderr).toContain("expected zero arguments");
   });
 
+  test("compares shared marker syntax and both parser and config test suites", () => {
+    for (const [upstream, local] of [
+      ["src/syntax.ts", "src/syntax.ts"],
+      ["src/parser.ts", "src/parser.ts"],
+      ["src/config.ts", "src/config.ts"],
+      ["tests/parser.test.ts", "test/parser.test.ts"],
+      ["tests/config.test.ts", "test/config.test.ts"],
+    ]) {
+      expect(script).toContain(`["${upstream}", "${local}"]`);
+    }
+  });
+
   test("resolves through the commits API and fetches raw files by resolved SHA", () => {
     expect(script).toContain("api.github.com/repos/${REPOSITORY}/commits/${requestedRef}");
     expect(script).toContain("resolvedSha !== requestedRef");
@@ -67,7 +85,7 @@ describe("upstream parity identity gate", () => {
 
   test("pins pull request and push parity while schedules track main", () => {
     expect(workflow).toContain("GITHUB_TOKEN: ${{ github.token }}");
-    expect(workflow).toContain("OBSIDIAN_TABSDOWN_SHA: 20b3da41426a90950a4719274a1117d0059a6f1a");
+    expect(workflow).toContain("OBSIDIAN_TABSDOWN_SHA: 654a04712bd2a2e38a77be2436199a137f3ba19a");
     expect(workflow).toContain("github.event_name != 'schedule'");
     expect(workflow).toContain('npm run check:upstream -- "$OBSIDIAN_TABSDOWN_SHA"');
     expect(workflow).toContain("github.event_name == 'schedule'");

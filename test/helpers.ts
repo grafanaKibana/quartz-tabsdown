@@ -30,6 +30,6 @@ export const render = async (markdown: string, options?: TabsdownOptions): Promi
     .use(transformer.markdownPlugins?.(createCtx()) ?? [])
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeStringify, { allowDangerousHtml: true })
-    .process(markdown);
+    .process(transformer.textTransform?.(createCtx(), markdown) ?? markdown);
   return String(file);
 };

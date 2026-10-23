@@ -1,8 +1,8 @@
 diff --git a/src/config.ts b/src/config.ts
-index ce22f16..2fc4b7c 100644
+index 67d1321..57cd505 100644
 --- a/src/config.ts
 +++ b/src/config.ts
-@@ -18,11 +18,8 @@ export interface TabsdownConfig {
+@@ -19,11 +19,8 @@ export interface TabsdownConfig {
  export type KeyedConfigName = keyof TabsdownConfig;
  
  export type ParsedConfigToken =
@@ -15,7 +15,7 @@ index ce22f16..2fc4b7c 100644
  const keyedValues: Record<KeyedConfigName, ReadonlySet<string>> = {
    position: new Set(["top", "left", "right", "bottom"]),
    layout: new Set(["one", "multi"]),
-@@ -33,10 +30,6 @@ const keyedValues: Record<KeyedConfigName, ReadonlySet<string>> = {
+@@ -34,10 +31,6 @@ const keyedValues: Record<KeyedConfigName, ReadonlySet<string>> = {
  };
  
  export function parseConfigToken(token: string): ParsedConfigToken {
@@ -27,10 +27,10 @@ index ce22f16..2fc4b7c 100644
    if (!match) return { kind: "invalid" };
    const key = match[1] as KeyedConfigName;
 diff --git a/src/parser.ts b/src/parser.ts
-index 809fb51..1d7e846 100644
+index c8d18e4..84d142f 100644
 --- a/src/parser.ts
 +++ b/src/parser.ts
-@@ -229,10 +229,6 @@ export function parseTabs(source: string): TabsParseResult {
+@@ -253,10 +253,6 @@ export function parseTabs(source: string, syntax: TabsSyntax = "fenced"): TabsPa
          if (parsed.kind === "invalid") {
            return fail("invalid-config", `Unknown configuration value "${value}".`, lineNumber);
          }
@@ -68,10 +68,10 @@ index 8595128..1790340 100644
      expect(source.slice(0, edit.from) + edit.replacement + source.slice(edit.to)).toBe(
        "config: position=right\n\ntab: One\ntab: Two\n",
 diff --git a/test/parser.test.ts b/test/parser.test.ts
-index 9509164..6c44890 100644
+index 9eda441..9e4d581 100644
 --- a/test/parser.test.ts
 +++ b/test/parser.test.ts
-@@ -130,14 +130,26 @@ describe("parseTabs", () => {
+@@ -131,14 +131,31 @@ describe("parseTabs", () => {
      );
    });
  
@@ -93,10 +93,15 @@ index 9509164..6c44890 100644
 +    "top, multi",
 +    "position=left, multi",
 +  ])("rejects bare configuration values: %s", (config) => {
-+    expect(parseTabs(`config: ${config}\ntab: One\ntab: Two`)).toMatchObject({
-+      ok: false,
-+      diagnostic: { code: "invalid-config", line: 1 },
-+    });
++    for (const syntax of ["fenced", "markers"] as const) {
++      const source = [`config: ${config}`, "tab: One", "tab: Two"]
++        .map((line) => (syntax === "markers" ? `%% ${line} %%` : line))
++        .join("\n");
++      expect(parseTabs(source, syntax)).toMatchObject({
++        ok: false,
++        diagnostic: { code: "invalid-config", line: 1 },
++      });
++    }
 +  });
 +
 +  test("rejects a bare value on a later config line", () => {
