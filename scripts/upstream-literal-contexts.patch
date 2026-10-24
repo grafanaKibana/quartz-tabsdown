@@ -1,3 +1,41 @@
+diff --git a/src/parser.ts b/src/parser.ts
+index 84d142f..4445434 100644
+--- a/src/parser.ts
++++ b/src/parser.ts
+@@ -182,6 +182,7 @@ export function parseTabs(source: string, syntax: TabsSyntax = "fenced"): TabsPa
+     controls.map((marker) => [source.slice(0, marker.from).split("\n").length, marker]),
+   );
+   let markerDepth = 0;
++  let markerOpeningLine = 0;
+   const tabs: ParsedTab[] = [];
+   const configuration: TabConfiguration[] = [];
+   const options: TabsdownConfig = {};
+@@ -206,7 +207,10 @@ export function parseTabs(source: string, syntax: TabsSyntax = "fenced"): TabsPa
+     const lineNumber = index + 1;
+     const control = markers.get(lineNumber);
+     const nestedMarker = markerDepth > 0 || control?.kind === "tabs";
+-    if (control?.kind === "tabs") markerDepth += 1;
++    if (control?.kind === "tabs") {
++      if (markerDepth === 0) markerOpeningLine = lineNumber;
++      markerDepth += 1;
++    }
+     if (control?.kind === "endtabs" && markerDepth > 0) markerDepth -= 1;
+     const structural =
+       syntax === "markers" &&
+@@ -330,7 +334,11 @@ export function parseTabs(source: string, syntax: TabsSyntax = "fenced"): TabsPa
+   // Checked before the tab count, because an unclosed nested block swallows every
+   // marker after it and would otherwise surface as a missing tab.
+   if (nested || markerDepth > 0) {
+-    return fail("unclosed-nested-block", "A nested tabs block is never closed.", nestedLine);
++    return fail(
++      "unclosed-nested-block",
++      "A nested tabs block is never closed.",
++      markerDepth > 0 ? markerOpeningLine : nestedLine,
++    );
+   }
+-
++
+   if (tabs.length < 2) {
 diff --git a/src/syntax.ts b/src/syntax.ts
 index 32a5573..f420ec3 100644
 --- a/src/syntax.ts
@@ -132,10 +170,10 @@ index 32a5573..f420ec3 100644
    }
    return result;
 diff --git a/test/parser.test.ts b/test/parser.test.ts
-index 9e4d581..4681041 100644
+index 9e4d581..7185168 100644
 --- a/test/parser.test.ts
 +++ b/test/parser.test.ts
-@@ -790,3 +790,53 @@ describe("contained marker layouts", () => {
+@@ -790,3 +790,65 @@ describe("contained marker layouts", () => {
      expect(commentMarkers(`${prefix}%% tabs %%\n`)).toEqual([]);
    });
  });
@@ -189,3 +227,15 @@ index 9e4d581..4681041 100644
 +    });
 +  });
 +});
++
++test.each(["fenced", "markers"] as const)(
++  "unclosed nested markers retain the opener line in %s syntax",
++  (syntax) => {
++    const outer = syntax === "fenced" ? "tab: Outer" : "%% tab: Outer %%";
++    const source = `${outer}\n\n%% tabs %%\n%% tab: Inner %%\n%% tab: Other %%`;
++    expect(parseTabs(source, syntax)).toMatchObject({
++      ok: false,
++      diagnostic: { code: "unclosed-nested-block", line: 3 },
++    });
++  },
++);

@@ -182,6 +182,7 @@ export function parseTabs(source: string, syntax: TabsSyntax = "fenced"): TabsPa
     controls.map((marker) => [source.slice(0, marker.from).split("\n").length, marker]),
   );
   let markerDepth = 0;
+  let markerOpeningLine = 0;
   const tabs: ParsedTab[] = [];
   const configuration: TabConfiguration[] = [];
   const options: TabsdownConfig = {};
@@ -206,7 +207,10 @@ export function parseTabs(source: string, syntax: TabsSyntax = "fenced"): TabsPa
     const lineNumber = index + 1;
     const control = markers.get(lineNumber);
     const nestedMarker = markerDepth > 0 || control?.kind === "tabs";
-    if (control?.kind === "tabs") markerDepth += 1;
+    if (control?.kind === "tabs") {
+      if (markerDepth === 0) markerOpeningLine = lineNumber;
+      markerDepth += 1;
+    }
     if (control?.kind === "endtabs" && markerDepth > 0) markerDepth -= 1;
     const structural =
       syntax === "markers" &&
@@ -330,7 +334,11 @@ export function parseTabs(source: string, syntax: TabsSyntax = "fenced"): TabsPa
   // Checked before the tab count, because an unclosed nested block swallows every
   // marker after it and would otherwise surface as a missing tab.
   if (nested || markerDepth > 0) {
-    return fail("unclosed-nested-block", "A nested tabs block is never closed.", nestedLine);
+    return fail(
+      "unclosed-nested-block",
+      "A nested tabs block is never closed.",
+      markerDepth > 0 ? markerOpeningLine : nestedLine,
+    );
   }
 
   if (tabs.length < 2) {

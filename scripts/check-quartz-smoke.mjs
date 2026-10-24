@@ -145,8 +145,26 @@ check("literal markers survive while ordinary comments disappear", () => {
   assert.match(quotedLiteral.textContent, /%% endtabs %%/);
   assert.ok(!html.includes("ordinary-comment-must-disappear"));
 });
+check("malformed label delimiters remain literal without hiding the next tab", () => {
+  const block = blockWithLabel("Label `");
+  assert.deepEqual(
+    own(block, ".tabsdown__tab-label").map((node) => node.textContent),
+    ["Label `", "Other label"],
+  );
+  assert.equal(own(block, ".tabsdown__panel").length, 2);
+});
+check("marker controls inside reference titles do not open layouts", () => {
+  // OFM applies its own comment rules to titles; Tabsdown must not promote
+  // their marker-shaped text to structural controls.
+  const labels = [...document.querySelectorAll(".tabsdown__tab-label")].map(
+    (node) => node.textContent,
+  );
+  assert.ok(!labels.includes("Title literal A"));
+  assert.ok(!labels.includes("Title literal B"));
+});
+
 check("all layouts render with styles and no internal transport leaks", () => {
-  assert.equal(blocks.length, 12);
+  assert.equal(blocks.length, 13);
   assert.equal(document.querySelectorAll(".tabsdown__diagnostic").length, 0);
   assert.doesNotMatch(html, /language-tabsdown/);
   const styles = [...document.querySelectorAll("style")].map((node) => node.textContent);

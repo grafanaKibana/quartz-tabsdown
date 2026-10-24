@@ -840,3 +840,15 @@ describe("Quartz literal-context regressions", () => {
     });
   });
 });
+
+test.each(["fenced", "markers"] as const)(
+  "unclosed nested markers retain the opener line in %s syntax",
+  (syntax) => {
+    const outer = syntax === "fenced" ? "tab: Outer" : "%% tab: Outer %%";
+    const source = `${outer}\n\n%% tabs %%\n%% tab: Inner %%\n%% tab: Other %%`;
+    expect(parseTabs(source, syntax)).toMatchObject({
+      ok: false,
+      diagnostic: { code: "unclosed-nested-block", line: 3 },
+    });
+  },
+);

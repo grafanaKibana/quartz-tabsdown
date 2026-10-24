@@ -52,7 +52,7 @@ The site uses Quartz's default OFM settings and plugin ordering. CI also runs th
 npm run check:upstream -- <40-character-obsidian-pr-head-sha>
 ```
 
-`src/syntax.ts`, `src/parser.ts`, `src/config.ts`, and their tests are adapted from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown). After formatting, parity applies three explicit patches in order: `scripts/upstream-keyed-config.patch` requires keyed configuration, then `scripts/upstream-renderer-only.patch` removes Obsidian's unused `configEdit` source-edit helper, its result type, syntax import, and tests; finally, `scripts/upstream-literal-contexts.patch` corrects backslash parity and math delimiters in the shared scanner with regression tests. Configuration parsing and serialization remain shared. Patch conflicts or any other file differences fail the check. The same machine-readable contract drives style validation.
+`src/syntax.ts`, `src/parser.ts`, `src/config.ts`, and their tests are adapted from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown). After formatting, parity applies three explicit patches in order: `scripts/upstream-keyed-config.patch` requires keyed configuration, then `scripts/upstream-renderer-only.patch` removes Obsidian's unused `configEdit` source-edit helper, its result type, syntax import, and tests; finally, `scripts/upstream-literal-contexts.patch` corrects backslash parity, math delimiters, and nested marker diagnostic locations with regression tests. Configuration parsing and serialization remain shared. Patch conflicts or any other file differences fail the check. The same machine-readable contract drives style validation.
 
 The check builds the package, fetches the requested upstream commit, and reports:
 

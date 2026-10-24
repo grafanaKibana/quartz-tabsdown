@@ -22,9 +22,22 @@ function structuralMarkers(
 ): { from: number; to: number; kind: CommentMarker["kind"]; line: number }[] {
   const tree = unified().use(remarkParse).parse(source);
   const literals: { from: number; to: number }[] = [];
+  const labelLiterals = new Set<number>();
   function collect(parent: Parent): void {
     for (const child of parent.children) {
-      if (["code", "html", "inlineCode"].includes(child.type) && child.position) {
+      if (
+        [
+          "code",
+          "html",
+          "inlineCode",
+          "definition",
+          "link",
+          "image",
+          "linkReference",
+          "imageReference",
+        ].includes(child.type) &&
+        child.position
+      ) {
         literals.push({ from: child.position.start.offset!, to: child.position.end.offset! });
       } else if ("children" in child) collect(child);
     }
@@ -109,7 +122,18 @@ function structuralMarkers(
         continue;
       }
       const start = row.offset + row.text.indexOf("%%");
-      if (!literals.some((literal) => start >= literal.from && start < literal.to)) {
+      if (
+        !literals.some(
+          (literal) =>
+            !labelLiterals.has(literal.from) && start >= literal.from && start < literal.to,
+        )
+      ) {
+        // Labels are opaque to body Markdown. A provisional code/HTML span
+        // opened inside an accepted control cannot hide subsequent controls.
+        for (const literal of literals) {
+          if (literal.from >= start && literal.from < row.offset + row.text.length)
+            labelLiterals.add(literal.from);
+        }
         markers.push({
           from: start,
           to: row.offset + row.text.length,

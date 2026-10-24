@@ -315,3 +315,86 @@ test("even backslashes before code preserve layout discovery", async () => {
   expect(count(html)).toBe(1);
   expect(html).not.toContain("quartz-tabsdown-marker");
 });
+
+test.each(["", "> ", "- "])("malformed labels cannot hide controls under %j", async (prefix) => {
+  for (const [opener, closer] of [
+    ["`", "`"],
+    ["<!--", "-->"],
+    ["<?", "?>"],
+    ["<![CDATA[", "]]>"],
+  ]) {
+    const source = `%% tabs %%\n%% tab: A ${opener} %%\n%% tab: B %%\nbody ${closer}\n%% endtabs %%`;
+    const nested = source
+      .split("\n")
+      .map((line, i) => (prefix === "- " && i > 0 ? "  " : prefix) + line)
+      .join("\n");
+    const html = await render(nested);
+    expect(count(html)).toBe(1);
+    const root = document.createElement("div");
+    root.innerHTML = html;
+    expect(
+      [...root.querySelectorAll(".tabsdown__tab-label")].map((node) => node.textContent),
+    ).toEqual([`A ${opener}`, "B"]);
+    expect(html).not.toContain("tabsdown__diagnostic");
+  }
+});
+
+test("unclosed marker diagnostics in fences report the document opener line", async () => {
+  const html = await render(
+    "Introduction\n\n```tabsdown\ntab: Outer\n%% tabs %%\n%% tab: Inner %%\n%% tab: Other %%\n```",
+  );
+  expect(html).toContain("Line 5");
+  expect(html).not.toContain("Line 0");
+});
+
+test("invalid fences inside marker panels report document-relative lines", async () => {
+  const html = await render(
+    "Introduction\n\n%% tabs %%\n%% tab: Outer %%\n```tabsdown\ntab: A\ntab: A\n```\n%% tab: Other %%\n%% endtabs %%",
+  );
+  expect(html).toContain('Duplicate tab label "A".');
+  expect(html).toContain("Line 7");
+});
+
+test("inherited URLs ending in a backslash do not leak synthetic definitions", async () => {
+  const definition = String.raw`[ref]: <https://example.test/a\\>`;
+  const html = await render(
+    `${definition}\n\n[outside][ref]\n\n\`\`\`tabsdown\ntab: One\n[inside][ref]\ntab: Two\n\`\`\``,
+  );
+  const root = document.createElement("div");
+  root.innerHTML = html;
+  const links = [...root.querySelectorAll("a")].map((node) => node.getAttribute("href"));
+  expect(links).toEqual(["https://example.test/a%5C", "https://example.test/a%5C"]);
+  expect(root.textContent).not.toContain("[ref]:");
+});
+
+test.each([String.raw`a\*b`, String.raw`a\[b\]`, String.raw`a\\b`])(
+  "escaped reference identity %j survives fenced inheritance",
+  async (label) => {
+    const html = await render(
+      `[${label}]: https://example.test\n\n[outside][${label}]\n\n\`\`\`tabsdown\ntab: One\n[inside][${label}]\ntab: Two\n\`\`\``,
+    );
+    const root = document.createElement("div");
+    root.innerHTML = html;
+    expect([...root.querySelectorAll("a")].map((node) => node.textContent)).toEqual([
+      "outside",
+      "inside",
+    ]);
+  },
+);
+
+test.each(["definition", "link", "image"])(
+  "marker-shaped lines inside a multiline %s title remain literal",
+  async (kind) => {
+    const title = `Title\n${layout()}\nend`;
+    const source =
+      kind === "definition"
+        ? `[link][ref]\n\n[ref]: https://example.test "${title}"`
+        : `${kind === "image" ? "!" : ""}[label](https://example.test "${title}")`;
+    const html = await render(source);
+    expect(count(html)).toBe(0);
+    const root = document.createElement("div");
+    root.innerHTML = html;
+    expect(root.querySelector(kind === "image" ? "img" : "a")?.getAttribute("title")).toBe(title);
+    expect(html).not.toContain("quartz-tabsdown-marker");
+  },
+);

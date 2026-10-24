@@ -209,8 +209,9 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
       const definitions = collectDefinitions(tree);
 
       function definitionSource(definition: Definition): string {
-        const label = definition.identifier.replace(/[\\[\]]/g, "\\$&");
-        const url = definition.url.replace(/[<>\n\r]/g, (character) =>
+        // mdast identifiers retain authored escapes; escaping again changes identity.
+        const label = definition.identifier;
+        const url = definition.url.replace(/[\\<>\n\r]/g, (character) =>
           encodeURIComponent(character),
         );
         const title =
@@ -353,7 +354,11 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
         scope: readonly Definition[],
       ): RootContent {
         const result = parseTabs(source);
-        if (!result.ok) return diagnosticNode(result.diagnostic);
+        if (!result.ok)
+          return diagnosticNode({
+            ...result.diagnostic,
+            line: result.diagnostic.line + lineOffset,
+          });
         // Unescaping a fenced tab body changes offsets but never line counts.
         const locationSource = source.replace(/^\\(?=tab:)/gm, "");
         let bodyCursor = 0;

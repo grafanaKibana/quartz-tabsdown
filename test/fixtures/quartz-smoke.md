@@ -133,3 +133,19 @@ More marker content.
 ```
 
 [shared]: https://example.test/shared "Document reference"
+
+%% tabs %%
+%% tab: Label `%%
+%% tab: Other label %%
+Body`.
+%% endtabs %%
+
+[Literal title link][literal-title]
+
+<!-- prettier-ignore -->
+[literal-title]: https://example.test/title "Literal title
+%% tabs %%
+%% tab: Title literal A %%
+%% tab: Title literal B %%
+%% endtabs %%
+End title"
