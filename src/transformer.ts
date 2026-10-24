@@ -1,7 +1,8 @@
 import type { ElementContent, Properties } from "hast";
-import type { Parent, Root as MdastRoot, RootContent } from "mdast";
+import type { Definition, Parent, Root as MdastRoot, RootContent } from "mdast";
 import type { PluggableList, Plugin, Processor } from "unified";
 import type { QuartzTransformerPlugin } from "@quartz-community/types";
+import { protectMarkers, protectedMarker, restoreMarkers } from "./markers";
 import iconNodes from "lucide-static/icon-nodes.json";
 import {
   parseInlineLabel,
@@ -195,32 +196,214 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
   function () {
     const processor = this as unknown as Processor<MdastRoot>;
 
-    return (tree: MdastRoot) => {
+    return (tree: MdastRoot, file) => {
       let blockCount = 0;
+      const documentSource = String(file.value);
+      function collectDefinitions(parent: Parent, result: Definition[] = []): Definition[] {
+        for (const child of parent.children) {
+          if (child.type === "definition") result.push(child);
+          else if ("children" in child) collectDefinitions(child, result);
+        }
+        return result;
+      }
+      const definitions = collectDefinitions(tree);
 
-      function transform(parent: Parent, depth = 0): void {
-        parent.children.forEach((child, index) => {
-          if (child.type === "code" && child.lang === "tabsdown") {
-            parent.children[index] = block(child.value, depth);
+      function definitionSource(definition: Definition): string {
+        // mdast identifiers retain authored escapes; escaping again changes identity.
+        const label = definition.identifier;
+        const url = definition.url.replace(/[\\<>\n\r]/g, (character) =>
+          encodeURIComponent(character),
+        );
+        const title =
+          definition.title == null ? "" : ` "${definition.title.replace(/[\\"]/g, "\\$&")}"`;
+        return `[${label}]: <${url}>${title}\n`;
+      }
+
+      function marker(child: RootContent) {
+        return child.type === "html" ? protectedMarker(child.value) : undefined;
+      }
+
+      function transform(
+        parent: Parent,
+        depth = 0,
+        source = documentSource,
+        lineOffset = 0,
+        scope: readonly Definition[] = definitions,
+      ): void {
+        for (let index = 0; index < parent.children.length; index += 1) {
+          const child = parent.children[index]!;
+          const control = marker(child);
+          if (control?.kind === "tabs") {
+            let nesting = 1;
+            let end = index + 1;
+            for (; end < parent.children.length; end += 1) {
+              const next = marker(parent.children[end]!);
+              if (next?.kind === "tabs") nesting += 1;
+              if (next?.kind === "endtabs" && --nesting === 0) break;
+            }
+            if (nesting === 0) {
+              const group = parent.children.slice(index, end + 1);
+              parent.children.splice(
+                index,
+                group.length,
+                markerBlock(group, depth, source, lineOffset, scope),
+              );
+            } else {
+              parent.children[index] = diagnosticNode({
+                code: "unclosed-nested-block",
+                message: "A tabs block is never closed.",
+                line: control.line + lineOffset,
+                source: control.raw,
+              });
+            }
+          } else if (control) {
+            parent.children[index] = {
+              type: "paragraph",
+              children: [{ type: "text", value: control.raw }],
+            };
+          } else if (child.type === "code" && child.lang === "tabsdown") {
+            parent.children[index] = block(
+              child.value,
+              depth,
+              lineOffset + (child.position?.start.line ?? 0),
+              scope,
+            );
           } else if ("children" in child) {
-            transform(child, depth);
+            transform(child, depth, source, lineOffset, scope);
           }
+        }
+      }
+
+      function markerBlock(
+        group: RootContent[],
+        depth: number,
+        source: string,
+        lineOffset: number,
+        scope: readonly Definition[],
+      ): RootContent {
+        const inner = group.slice(1, -1);
+        const lines = inner.map((child) => marker(child)?.raw ?? "content");
+        const result = parseTabs(lines.join("\n"), "markers");
+        if (!result.ok) {
+          const offending = inner[result.diagnostic.line - 1] ?? group[0]!;
+          const start = group[0]!.position?.start.offset;
+          const end = group[group.length - 1]!.position?.end.offset;
+          return diagnosticNode({
+            ...result.diagnostic,
+            line: (marker(offending)?.line ?? offending.position?.start.line ?? 1) + lineOffset,
+            source:
+              start !== undefined && end !== undefined
+                ? restoreMarkers(source.slice(start, end))
+                : group.map((child) => marker(child)?.raw ?? "content").join("\n"),
+          });
+        }
+        const bodies: RootContent[][] = [];
+        let nesting = 0;
+        for (const child of inner) {
+          const control = marker(child);
+          if (control?.kind === "tab" && nesting === 0) {
+            bodies.push([]);
+            continue;
+          }
+          if (bodies.length > 0) bodies[bodies.length - 1]!.push(child);
+          if (control?.kind === "tabs") nesting += 1;
+          if (control?.kind === "endtabs") nesting -= 1;
+        }
+        return renderBlock(result, depth, (index) => {
+          const body: MdastRoot = { type: "root", children: bodies[index] ?? [] };
+          transform(body, depth + 1, source, lineOffset, scope);
+          return body.children;
         });
       }
 
-      function block(source: string, depth: number): RootContent {
-        const result = parseTabs(source);
-        if (!result.ok) {
-          return diagnosticNode(result.diagnostic);
+      function resolveReferences(parent: Parent, scope: readonly Definition[]): void {
+        for (let index = 0; index < parent.children.length; index += 1) {
+          const child = parent.children[index]!;
+          if (child.type === "linkReference" || child.type === "imageReference") {
+            const definition = scope.find((item) => item.identifier === child.identifier);
+            if (definition) {
+              parent.children[index] =
+                child.type === "linkReference"
+                  ? {
+                      type: "link",
+                      url: definition.url,
+                      title: definition.title,
+                      children: child.children,
+                      position: child.position,
+                      data: child.data,
+                    }
+                  : {
+                      type: "image",
+                      url: definition.url,
+                      title: definition.title,
+                      alt: child.alt,
+                      position: child.position,
+                      data: child.data,
+                    };
+            }
+          }
+          const resolved = parent.children[index]!;
+          if ("children" in resolved) resolveReferences(resolved, scope);
         }
+      }
 
+      function block(
+        source: string,
+        depth: number,
+        lineOffset: number,
+        scope: readonly Definition[],
+      ): RootContent {
+        const result = parseTabs(source);
+        if (!result.ok)
+          return diagnosticNode({
+            ...result.diagnostic,
+            line: result.diagnostic.line + lineOffset,
+          });
+        // Unescaping a fenced tab body changes offsets but never line counts.
+        const locationSource = source.replace(/^\\(?=tab:)/gm, "");
+        let bodyCursor = 0;
+        return renderBlock(result, depth, (index) => {
+          const tab = result.tabs[index]!;
+          // Parse definitions before any open literal context in the body. Keep local
+          // definitions authoritative and remove the inherited declarations afterwards.
+          const own = collectDefinitions(processor.parse(protectMarkers(tab.body)));
+          const prefix = scope
+            .filter(
+              (definition) => !own.some((local) => local.identifier === definition.identifier),
+            )
+            .map(definitionSource)
+            .join("");
+          const bodySource = protectMarkers(prefix + "\n" + tab.body);
+          const body = processor.parse(bodySource);
+          // Resolve inside this panel before the document-wide rehype lookup can
+          // let an earlier global definition shadow the panel-local definition.
+          const panelScope = [...own, ...scope];
+          resolveReferences(body, panelScope);
+          body.children = body.children.filter(
+            (child) =>
+              child.type !== "definition" ||
+              (child.position?.start.offset ?? prefix.length) >= prefix.length,
+          );
+          const locationBody = tab.body.replace(/^\\(?=tab:)/gm, "");
+          const tabOffset = locationSource.indexOf(locationBody, bodyCursor);
+          if (tabOffset >= 0) bodyCursor = tabOffset + locationBody.length;
+          const bodyLine = locationSource.slice(0, tabOffset).split("\n").length - 1;
+          const prefixLines = prefix.split("\n").length;
+          transform(body, depth + 1, bodySource, lineOffset + bodyLine - prefixLines, panelScope);
+          return body.children;
+        });
+      }
+
+      function renderBlock(
+        result: Extract<ReturnType<typeof parseTabs>, { ok: true }>,
+        depth: number,
+        content: (index: number) => RootContent[],
+      ): RootContent {
         const blockId = `tabsdown-${++blockCount}`;
         const buttons = result.tabs.map((tab, index) => tabButton(tab, blockId, index));
-        const panels = result.tabs.map((tab, index) => {
-          const body = processor.parse(tab.body);
-          transform(body, depth + 1);
-          return panelNode(tab, blockId, index, body.children);
-        });
+        const panels = result.tabs.map((tab, index) =>
+          panelNode(tab, blockId, index, content(index)),
+        );
 
         const classNames = ["tabsdown", ...blockStyleClasses(styleClasses, result.options)];
         if (depth > 0) {
@@ -256,6 +439,9 @@ export const Tabsdown: QuartzTransformerPlugin<TabsdownOptions> = (options) => {
 
   return {
     name: "Tabsdown",
+    textTransform(_ctx, source) {
+      return protectMarkers(source, { frontmatter: true });
+    },
     markdownPlugins(): PluggableList {
       return [remarkTabsdown(styleClasses)];
     },

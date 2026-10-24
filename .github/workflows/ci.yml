@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      OBSIDIAN_TABSDOWN_SHA: 20b3da41426a90950a4719274a1117d0059a6f1a
+      OBSIDIAN_TABSDOWN_SHA: 654a04712bd2a2e38a77be2436199a137f3ba19a
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -67,6 +67,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm install
       # Quartz clones plugins from a remote, so this checks the pushed ref
       # rather than the checkout.
       - run: ./scripts/quartz-smoke.sh "github:${{ github.repository }}#${{ github.head_ref || github.ref_name }}"

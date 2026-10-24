@@ -1,6 +1,6 @@
 # quartz-tabsdown
 
-quartz-tabsdown renders [Tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) Markdown as theme-native tabs in [Quartz](https://quartz.jzhao.xyz/). The same fenced blocks work in Obsidian and on the published site.
+quartz-tabsdown renders [Tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) Markdown as theme-native tabs in [Quartz](https://quartz.jzhao.xyz/). The same marker layouts and fenced blocks work in Obsidian and on the published site.
 
 ## What it does
 
@@ -28,7 +28,26 @@ See [plugin configuration](docs/configuration.md) for `quartz.ts`, transformer o
 
 ## Syntax
 
-Start each tab with a column-zero `tab: <label>` marker. A block needs at least two non-empty, unique labels. Add optional block settings on a column-zero `config: <values>` line before the first tab.
+Use comment markers for tabs whose bodies remain ordinary Markdown:
+
+```markdown
+%% tabs %%
+%% config: position=left, layout=multi %%
+
+%% tab: icon:book **First** %%
+
+Normal Markdown content.
+
+%% tab: Second %%
+
+More content.
+
+%% endtabs %%
+```
+
+Marker lines can be adjacent without blank lines. They also work inside lists and blockquotes, using the normal Markdown container prefixes. A layout needs at least two non-empty, unique labels, and optional configuration belongs before the first tab.
+
+Existing fenced syntax remains supported. Inside a `tabsdown` fence, start each tab with a column-zero `tab: <label>` line and add optional column-zero `config: <values>` lines before the first tab:
 
 `````markdown
 ````tabsdown
@@ -54,7 +73,7 @@ Blocks can also override appearance with `density=default|compact`, `personality
 
 Every configuration value must use `key=value` syntax. Bare values such as `config: top, multi` are rejected; use `config: position=top, layout=multi` instead. Repeating a key, including across multiple config lines, is an error.
 
-Use matching backtick or tilde fences. The outer fence must be longer than any matching fence inside it. Empty tab bodies are valid.
+For fenced layouts, use matching backtick or tilde fences. The outer fence must be longer than any matching fence inside it. Empty tab bodies are valid.
 
 ### Labels and icons
 
@@ -69,13 +88,19 @@ tab: icon:file-text Notes
 ```
 ````
 
-An unknown icon name renders no icon. Escape a literal icon prefix as `tab: \icon:name` and a literal marker line as `\tab:`.
+An unknown icon name renders no icon. Escape a literal icon prefix as `tab: \icon:name` (or `%% tab: \icon:name %%`) and a literal fenced tab line as `\tab:`.
 
 ### Nested tabs
 
-A tab body can contain another `tabsdown` block when its fence is shorter than the outer fence. Each level keeps its own active tab and configuration.
+A tab body can contain marker layouts, fenced layouts, or a mixture of both. Nested marker layouts need their own matching `%% endtabs %%`. When nesting fences, make the inner fence shorter than the outer fence. Each level keeps its own active tab and configuration.
 
 Nested blocks default to the secondary palette, matching Obsidian. An explicit block `palette=` setting overrides that default.
+
+### Literal content and diagnostics
+
+Marker-like text inside frontmatter, code spans, code fences, indented code, raw HTML, and math does not open a layout. Controls inside ordinary Obsidian comments also do not open layouts; those comments follow Quartz's normal comment-removal behavior. Structural controls occupy their own lines; inline prose containing `%% tabs %%` does not open a layout.
+
+Missing closing markers, invalid configuration, empty or duplicate labels, fewer than two tabs, and content before the first tab produce a diagnostic with the original source and location. Keep configuration before the first tab; later configuration lines belong to that tab's content.
 
 ## Without JavaScript
 
@@ -91,7 +116,7 @@ Quartz emits every panel in source order with its label. The client script adds 
 ## Troubleshooting
 
 - **A wikilink or callout renders incorrectly:** Keep Tabsdown before Obsidian Flavored Markdown. The default order is already correct.
-- **A block shows a diagnostic:** Check that `tab:` markers start at column zero, labels are unique, and the block has at least two tabs.
+- **A block shows a diagnostic:** Check matching marker delimiters (or column-zero `tab:` lines inside fences), unique labels, and at least two tabs.
 - **An inner fence closes Tabsdown:** Make the outer fence longer than every matching fence inside it, or use tildes.
 - **The build rejects style options:** The error includes the invalid configuration path. Compare it with the [style schema](docs/style-options.md).
 - **Still stuck:** [Open an issue](https://github.com/grafanaKibana/quartz-tabsdown/issues) with the block, configuration, and Quartz version.

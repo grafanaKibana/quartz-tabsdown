@@ -8,12 +8,19 @@ import { parse } from "yaml";
 const REPOSITORY = "grafanaKibana/obsidian-tabsdown";
 const STYLESHEET = "src/styles/tabsdown.scss";
 
-/** Shared files compared after formatting and the explicit keyed-only syntax patch. */
+/** Shared files compared after formatting and the explicit Quartz adaptation patches. */
 const VENDORED = [
+  ["src/syntax.ts", "src/syntax.ts"],
   ["src/config.ts", "src/config.ts"],
   ["src/parser.ts", "src/parser.ts"],
   ["tests/config.test.ts", "test/config.test.ts"],
   ["tests/parser.test.ts", "test/parser.test.ts"],
+];
+
+const PATCHES = [
+  "scripts/upstream-keyed-config.patch",
+  "scripts/upstream-renderer-only.patch",
+  "scripts/upstream-literal-contexts.patch",
 ];
 
 const problems = [];
@@ -82,13 +89,14 @@ async function checkVendoredFiles() {
       await writeFile(target, upstream);
     }
 
-    // Quartz requires key=value while this upstream revision still accepts bare tokens.
-    // Patch conflicts fail the check; changes outside the patch still compare exactly.
-    execFileSync(
-      "git",
-      ["apply", "--whitespace=error", resolve("scripts/upstream-keyed-config.patch")],
-      { cwd: directory, stdio: "pipe" },
-    );
+    // Require key=value, omit editor helpers, then apply literal-context fixes.
+    // Patch conflicts fail the check; all remaining source still compares exactly.
+    for (const patch of PATCHES) {
+      execFileSync("git", ["apply", "--whitespace=error", resolve(patch)], {
+        cwd: directory,
+        stdio: "pipe",
+      });
+    }
 
     for (const [upstreamPath, vendoredPath] of VENDORED) {
       const upstream = await readFile(join(directory, vendoredPath), "utf8");
@@ -185,6 +193,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `In sync with ${REPOSITORY}@${resolvedSha}: ${VENDORED.length} files match after the keyed-only patch and ` +
+  `In sync with ${REPOSITORY}@${resolvedSha}: ${VENDORED.length} files match after the keyed-only, renderer-only, and literal-context patches and ` +
     `${controls} Style Settings controls mapped with defaults, types, enums, ranges, steps, and units.`,
 );

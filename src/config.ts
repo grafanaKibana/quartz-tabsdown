@@ -52,39 +52,3 @@ export function serializeConfig(config: TabsdownConfig): string {
   ].filter(Boolean);
   return values.length === 0 ? "" : `config: ${values.join(", ")}`;
 }
-
-export interface ConfigEdit {
-  from: number;
-  to: number;
-  replacement: string;
-}
-
-export function configEdit(source: string, config: TabsdownConfig): ConfigEdit {
-  const lines = [...source.matchAll(/.*(?:\r\n|\n|$)/g)].filter((match) => match[0] !== "");
-  const configLines = [] as RegExpMatchArray[];
-  for (const line of lines) {
-    if (line[0].startsWith("config:")) {
-      configLines.push(line);
-      continue;
-    }
-    if (line[0].trim() !== "") break;
-  }
-  const newline = source.match(/\r\n|\n/)?.[0] ?? "\n";
-  const serialized = serializeConfig(config);
-  if (configLines.length === 0) {
-    return { from: 0, to: 0, replacement: serialized ? `${serialized}${newline}` : "" };
-  }
-
-  const first = configLines[0];
-  const last = configLines[configLines.length - 1];
-  if (!first || !last || first.index === undefined || last.index === undefined) {
-    throw new Error("Unable to locate configuration region.");
-  }
-  const lastText = last[0];
-  const ending = lastText.endsWith("\r\n") ? "\r\n" : lastText.endsWith("\n") ? "\n" : "";
-  return {
-    from: first.index,
-    to: last.index + lastText.length,
-    replacement: serialized ? `${serialized}${ending}` : "",
-  };
-}
