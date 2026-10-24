@@ -1,0 +1,124 @@
+diff --git a/src/config.ts b/src/config.ts
+index 57cd505..0b1f6d3 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -1,4 +1,3 @@
+-import { commentMarkers, type TabsSyntax } from "./syntax";
+ export type TabPosition = "top" | "left" | "right" | "bottom";
+ export type TabLayout = "one" | "multi";
+ export type TabConfiguration = TabPosition | TabLayout;
+@@ -53,59 +52,3 @@ export function serializeConfig(config: TabsdownConfig): string {
+   ].filter(Boolean);
+   return values.length === 0 ? "" : `config: ${values.join(", ")}`;
+ }
+-
+-export interface ConfigEdit {
+-  from: number;
+-  to: number;
+-  replacement: string;
+-}
+-
+-export function configEdit(
+-  source: string,
+-  config: TabsdownConfig,
+-  syntax: TabsSyntax = "fenced",
+-): ConfigEdit {
+-  if (syntax === "markers") {
+-    const controls = commentMarkers(source);
+-    const firstTab =
+-      controls.find((marker) => marker.kind === "tab" || marker.kind === "tabs")?.from ??
+-      source.length;
+-    const configs = controls.filter((marker) => marker.kind === "config" && marker.from < firstTab);
+-    const serialized = serializeConfig(config);
+-    const newline = source.match(/\r\n|\n/)?.[0] ?? "\n";
+-    const first = configs[0];
+-    const last = configs[configs.length - 1];
+-    return {
+-      from: first?.from ?? 0,
+-      to: last?.end ?? 0,
+-      replacement: serialized ? `%% ${serialized} %%${newline}` : "",
+-    };
+-  }
+-  const lines = [...source.matchAll(/.*(?:\r\n|\n|$)/g)].filter((match) => match[0] !== "");
+-  const configLines = [] as RegExpMatchArray[];
+-  for (const line of lines) {
+-    if (line[0].startsWith("config:")) {
+-      configLines.push(line);
+-      continue;
+-    }
+-    if (line[0].trim() !== "") break;
+-  }
+-  const newline = source.match(/\r\n|\n/)?.[0] ?? "\n";
+-  const serialized = serializeConfig(config);
+-  if (configLines.length === 0) {
+-    return { from: 0, to: 0, replacement: serialized ? `${serialized}${newline}` : "" };
+-  }
+-
+-  const first = configLines[0];
+-  const last = configLines[configLines.length - 1];
+-  if (!first || !last || first.index === undefined || last.index === undefined) {
+-    throw new Error("Unable to locate configuration region.");
+-  }
+-  const lastText = last[0];
+-  const ending = lastText.endsWith("\r\n") ? "\r\n" : lastText.endsWith("\n") ? "\n" : "";
+-  return {
+-    from: first.index,
+-    to: last.index + lastText.length,
+-    replacement: serialized ? `${serialized}${ending}` : "",
+-  };
+-}
+diff --git a/test/config.test.ts b/test/config.test.ts
+index e38e7e2..bb18eb5 100644
+--- a/test/config.test.ts
++++ b/test/config.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, expect, test } from "vitest";
+-
+-import { configEdit, parseConfigToken, serializeConfig } from "../src/config";
+-
++
++import { parseConfigToken, serializeConfig } from "../src/config";
++
+ test.each(["constructor=value", "__proto__=value"])("rejects inherited-looking key %s", (token) =>
+   expect(parseConfigToken(token)).toEqual({ kind: "invalid" }),
+@@ -30,40 +30,3 @@ describe("serializeConfig", () => {
+     expect(serializeConfig({})).toBe("");
+   });
+ });
+-
+-describe("configEdit", () => {
+-  test.each(["\n", "\r\n"])("inserts a config line without changing %j source bytes", (newline) => {
+-    const source = `tab: One${newline}body${newline}tab: Two`;
+-    const edit = configEdit(source, { density: "compact" });
+-    expect(source.slice(0, edit.from) + edit.replacement + source.slice(edit.to)).toBe(
+-      `config: density=compact${newline}${source}`,
+-    );
+-  });
+-
+-  test("migrates repeated legacy config lines and preserves the remainder", () => {
+-    const source = "config: left\n\nconfig: multi\n\ntab: One\ntab: Two\n";
+-    const edit = configEdit(source, { position: "right" });
+-    expect(source.slice(0, edit.from) + edit.replacement + source.slice(edit.to)).toBe(
+-      "config: position=right\n\ntab: One\ntab: Two\n",
+-    );
+-  });
+-
+-  test("does not invent or remove a terminal newline", () => {
+-    for (const source of [
+-      "config: position=left\ntab: One\ntab: Two",
+-      "config: position=left\ntab: One\ntab: Two\n",
+-    ]) {
+-      const edit = configEdit(source, {});
+-      const rewritten = source.slice(0, edit.from) + edit.replacement + source.slice(edit.to);
+-      expect(rewritten.endsWith("\n")).toBe(source.endsWith("\n"));
+-    }
+-  });
+-
+-  test("does not treat a config-looking tab body line as leading config", () => {
+-    const source = "tab: One\nconfig: body\ntab: Two";
+-    const edit = configEdit(source, { density: "compact" });
+-    expect(source.slice(0, edit.from) + edit.replacement + source.slice(edit.to)).toBe(
+-      `config: density=compact\n${source}`,
+-    );
+-  });
+-});

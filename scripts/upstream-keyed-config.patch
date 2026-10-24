@@ -42,7 +42,7 @@ index c8d18e4..84d142f 100644
            return fail("invalid-config", `Duplicate configuration key "${parsed.key}".`, lineNumber);
          }
 diff --git a/test/config.test.ts b/test/config.test.ts
-index 8595128..1790340 100644
+index 8595128..e38e7e2 100644
 --- a/test/config.test.ts
 +++ b/test/config.test.ts
 @@ -6,6 +6,10 @@ test.each(["constructor=value", "__proto__=value"])("rejects inherited-looking k
@@ -56,17 +56,6 @@ index 8595128..1790340 100644
  describe("serializeConfig", () => {
    test("uses canonical option order", () => {
      expect(
-@@ -36,8 +40,8 @@ describe("configEdit", () => {
-     );
-   });
- 
--  test("migrates repeated legacy config lines and preserves the remainder", () => {
--    const source = "config: left\n\nconfig: multi\n\ntab: One\ntab: Two\n";
-+  test("replaces multiple keyed config lines and preserves the remainder", () => {
-+    const source = "config: position=left\n\nconfig: layout=multi\n\ntab: One\ntab: Two\n";
-     const edit = configEdit(source, { position: "right" });
-     expect(source.slice(0, edit.from) + edit.replacement + source.slice(edit.to)).toBe(
-       "config: position=right\n\ntab: One\ntab: Two\n",
 diff --git a/test/parser.test.ts b/test/parser.test.ts
 index 9eda441..9e4d581 100644
 --- a/test/parser.test.ts

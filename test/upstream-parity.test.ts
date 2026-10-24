@@ -8,9 +8,12 @@ const script = readFileSync("scripts/check-upstream-parity.mjs", "utf8");
 const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
 
 describe("upstream parity identity gate", () => {
-  test("applies only the explicit keyed-only patch and rejects incompatible upstream context", () => {
+  test("applies explicit Quartz patches and rejects incompatible upstream context", () => {
     const directory = mkdtempSync(join(tmpdir(), "quartz-keyed-patch-test-"));
-    const patch = resolve("scripts/upstream-keyed-config.patch");
+    const patches = [
+      resolve("scripts/upstream-keyed-config.patch"),
+      resolve("scripts/upstream-renderer-only.patch"),
+    ];
     const paths = [
       "src/syntax.ts",
       "src/config.ts",
@@ -23,17 +26,44 @@ describe("upstream parity identity gate", () => {
         mkdirSync(dirname(join(directory, path)), { recursive: true });
         writeFileSync(join(directory, path), readFileSync(path));
       }
-      execFileSync("git", ["apply", "--reverse", patch], { cwd: directory });
+      for (const patch of [...patches].reverse()) {
+        execFileSync("git", ["apply", "--reverse", patch], { cwd: directory });
+      }
       expect(readFileSync(join(directory, "src/config.ts"), "utf8")).toContain('kind: "bare"');
-      execFileSync("git", ["apply", "--whitespace=error", patch], { cwd: directory });
+      expect(readFileSync(join(directory, "src/config.ts"), "utf8")).toContain("configEdit(");
+      expect(readFileSync(join(directory, "test/config.test.ts"), "utf8")).toContain(
+        'describe("configEdit"',
+      );
+      for (const patch of patches) {
+        execFileSync("git", ["apply", "--whitespace=error", patch], { cwd: directory });
+      }
       for (const path of paths) {
         expect(readFileSync(join(directory, path), "utf8")).toBe(readFileSync(path, "utf8"));
       }
-      execFileSync("git", ["apply", "--reverse", patch], { cwd: directory });
+      expect(readFileSync(join(directory, "src/config.ts"), "utf8")).not.toContain("configEdit");
+      expect(readFileSync(join(directory, "src/config.ts"), "utf8")).not.toContain("ConfigEdit");
+      expect(readFileSync(join(directory, "src/config.ts"), "utf8")).not.toContain("./syntax");
+      for (const patch of [...patches].reverse()) {
+        execFileSync("git", ["apply", "--reverse", patch], { cwd: directory });
+      }
       const config = join(directory, "src/config.ts");
-      writeFileSync(config, readFileSync(config, "utf8").replace('kind: "bare"', 'kind: "legacy"'));
-      const failed = spawnSync("git", ["apply", "--whitespace=error", patch], { cwd: directory });
-      expect(failed.status).not.toBe(0);
+      const upstreamConfig = readFileSync(config, "utf8");
+      writeFileSync(config, upstreamConfig.replace('kind: "bare"', 'kind: "legacy"'));
+      const keyedFailed = spawnSync("git", ["apply", "--whitespace=error", patches[0]!], {
+        cwd: directory,
+      });
+      expect(keyedFailed.status).not.toBe(0);
+
+      writeFileSync(config, upstreamConfig);
+      execFileSync("git", ["apply", "--whitespace=error", patches[0]!], { cwd: directory });
+      writeFileSync(
+        config,
+        readFileSync(config, "utf8").replace("function configEdit(", "function renamedConfigEdit("),
+      );
+      const rendererFailed = spawnSync("git", ["apply", "--whitespace=error", patches[1]!], {
+        cwd: directory,
+      });
+      expect(rendererFailed.status).not.toBe(0);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -73,6 +103,8 @@ describe("upstream parity identity gate", () => {
     ]) {
       expect(script).toContain(`["${upstream}", "${local}"]`);
     }
+    expect(script).toContain('"scripts/upstream-keyed-config.patch"');
+    expect(script).toContain('"scripts/upstream-renderer-only.patch"');
   });
 
   test("resolves through the commits API and fetches raw files by resolved SHA", () => {
