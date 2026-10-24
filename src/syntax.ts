@@ -89,7 +89,7 @@ function interruptsCodeParagraph(line: string, previousLine: string): boolean {
     /^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|<!--|<\?|<!\[CDATA\[|<![A-Z]|<(?:script|pre|style|textarea)(?:[ \t>]|$))/i.test(
       line,
     ) ||
-    /^ {0,3}(?:(?:=+|-+)[ \t]*|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,}|\$\$[ \t]*)$/.test(
+    /^ {0,3}(?:(?:=+|-+)[ \t]*|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,}|\${2,}[^$]*)$/.test(
       line,
     ) ||
     htmlBlockTag.test(line) ||
@@ -109,16 +109,17 @@ function endsCodeParagraph(line: string): boolean {
   );
 }
 
-function hasClosingCodeRun(
+function hasClosingInlineRun(
   source: string,
   from: number,
   length: number,
   previousLine: string,
+  character: "`" | "$",
 ): boolean {
   let first = true;
   for (const line of source.slice(from).split(/\r?\n/)) {
     if (!first && (!line.trim() || interruptsCodeParagraph(line, previousLine))) return false;
-    for (const match of line.matchAll(/`+/g)) {
+    for (const match of line.matchAll(character === "`" ? /`+/g : /\$+/g)) {
       if (match[0].length === length) return true;
     }
     if (first && endsCodeParagraph(previousLine)) return false;
@@ -126,6 +127,12 @@ function hasClosingCodeRun(
     first = false;
   }
   return false;
+}
+
+function isEscaped(source: string, index: number): boolean {
+  let slashes = 0;
+  for (let cursor = index - 1; cursor >= 0 && source[cursor] === "\\"; cursor -= 1) slashes += 1;
+  return slashes % 2 === 1;
 }
 
 interface ContainerStep {
@@ -236,7 +243,8 @@ export function commentMarkers(source: string): CommentMarker[] {
   let html: string | undefined;
   let htmlBlank = false;
   let comment = false;
-  let math = false;
+  let math = 0;
+  let dollars = 0;
   let code = 0;
   let paragraph = false;
   let previousLine = "";
@@ -263,11 +271,15 @@ export function commentMarkers(source: string): CommentMarker[] {
       continue;
     }
     if (math) {
-      if (/^ {0,3}\$\$[ \t]*$/.test(line)) math = false;
+      const closing = /^ {0,3}(\${2,})[ \t]*$/.exec(line);
+      if (closing && closing[1]!.length >= math) math = 0;
       continue;
     }
-    if (code && interruptsCodeParagraph(line, previousLine)) code = 0;
-    if (!comment && !code) {
+    if (interruptsCodeParagraph(line, previousLine)) {
+      code = 0;
+      dollars = 0;
+    }
+    if (!comment && !code && !dollars) {
       if (fenceMatch) {
         fence = fenceMatch[1];
         continue;
@@ -293,8 +305,9 @@ export function commentMarkers(source: string): CommentMarker[] {
         paragraph = false;
         continue;
       }
-      if (/^ {0,3}\$\$[ \t]*$/.test(line)) {
-        math = true;
+      const mathFence = /^ {0,3}(\${2,})[^$]*$/.exec(line);
+      if (mathFence) {
+        math = mathFence[1]!.length;
         continue;
       }
       let terminator: string | undefined;
@@ -322,27 +335,38 @@ export function commentMarkers(source: string): CommentMarker[] {
         if (end < 0) break;
         comment = false;
         cursor = end + 2;
-      } else if (!code && line.startsWith("<!--", cursor)) {
+      } else if (!code && !dollars && line.startsWith("<!--", cursor)) {
         const end = line.indexOf("-->", cursor + 4);
         if (end < 0) {
           html = "-->";
           break;
         }
         cursor = end + 3;
-      } else if (line[cursor] === "`" && (code > 0 || cursor === 0 || line[cursor - 1] !== "\\")) {
+      } else if (!dollars && line[cursor] === "`" && (code > 0 || !isEscaped(line, cursor))) {
         let end = cursor + 1;
         while (line[end] === "`") end += 1;
         const length = end - cursor;
         if (code === length) code = 0;
-        else if (!code && hasClosingCodeRun(source, from + end, length, line)) code = length;
+        else if (!code && hasClosingInlineRun(source, from + end, length, line, "`")) code = length;
         cursor = end;
-      } else if (!code && line.startsWith("%%", cursor)) {
+      } else if (!code && line[cursor] === "$" && (dollars > 0 || !isEscaped(line, cursor))) {
+        let end = cursor + 1;
+        while (line[end] === "$") end += 1;
+        const length = end - cursor;
+        if (dollars === length) dollars = 0;
+        else if (!dollars && hasClosingInlineRun(source, from + end, length, line, "$"))
+          dollars = length;
+        cursor = end;
+      } else if (!code && !dollars && line.startsWith("%%", cursor)) {
         comment = true;
         cursor += 2;
       } else cursor += 1;
     }
     paragraph = !endsCodeParagraph(line);
-    if (!paragraph) code = 0;
+    if (!paragraph) {
+      code = 0;
+      dollars = 0;
+    }
     previousLine = line;
   }
   return result;

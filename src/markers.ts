@@ -124,16 +124,24 @@ function structuralMarkers(
 }
 
 /** Protect structural controls from Obsidian's comment parser, keeping containers intact. */
-export function protectMarkers(source: string): string {
+export function protectMarkers(source: string, options: { frontmatter?: boolean } = {}): string {
+  // Only the full document has frontmatter. A fenced panel may start with a
+  // thematic break, so recursive panel parsing must scan that content normally.
+  const frontmatter = options.frontmatter
+    ? (/^(?:\uFEFF)?(---|\+\+\+)[ \t]*\r?\n(?:[\s\S]*?\r?\n)?\1[ \t]*(?:\r?\n|$)/.exec(
+        source,
+      )?.[0] ?? "")
+    : "";
+  const offset = frontmatter.length;
+  const lineOffset = frontmatter.split("\n").length - 1;
   let result = source;
-  for (const marker of structuralMarkers(source).reverse()) {
-    const raw = source.slice(marker.from, marker.to);
-    const data: ProtectedMarker = { kind: marker.kind, raw, line: marker.line };
+  for (const marker of structuralMarkers(source.slice(offset)).reverse()) {
+    const from = marker.from + offset;
+    const to = marker.to + offset;
+    const raw = source.slice(from, to);
+    const data: ProtectedMarker = { kind: marker.kind, raw, line: marker.line + lineOffset };
     const encoded = Buffer.from(JSON.stringify(data)).toString("base64");
-    result =
-      result.slice(0, marker.from) +
-      `<!--quartz-tabsdown-marker:${encoded}-->` +
-      result.slice(marker.to);
+    result = result.slice(0, from) + `<!--quartz-tabsdown-marker:${encoded}-->` + result.slice(to);
   }
   return result;
 }

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { expect, test } from "vitest";
-import { render } from "./helpers";
+import { render, createCtx } from "./helpers";
+import { Tabsdown } from "../src/transformer";
+import { protectMarkers } from "../src/markers";
 
 const layout = (a = "Alpha", b = "Beta") =>
   `%% tabs %%\n%% tab: **First** %%\n${a}\n%% tab: Second %%\n${b}\n%% endtabs %%`;
@@ -232,5 +234,84 @@ test("continuous list layouts preserve isolated trailing controls", async () => 
   const html = await render(source);
   expect(count(html)).toBe(2);
   expect(html).toContain("%% endtabs %%");
+  expect(html).not.toContain("quartz-tabsdown-marker");
+});
+
+test.each([true, false])(
+  "nested fences inherit enclosing definitions with a global: %s",
+  async (global) => {
+    const source =
+      '````tabsdown\ntab: Outer\n[ref]: https://outer.example "Outer"\n\n```tabsdown\ntab: Inner\n[link][ref] ![image][ref]\ntab: Other\n```\ntab: Other outer\n````';
+    const html = await render(source + (global ? "\n\n[ref]: https://global.example" : ""));
+    expect(html).toContain('href="https://outer.example" title="Outer"');
+    expect(html).toContain('src="https://outer.example"');
+    expect(html).not.toContain("global.example");
+  },
+);
+
+test("reference scope crosses marker nesting and isolates sibling fenced panels", async () => {
+  const inner =
+    "```tabsdown\ntab: Inherited\n[link][ref]\ntab: Own\n[ref]: https://inner.example\n\n[link][ref]\n```";
+  const html = await render(
+    "````tabsdown\ntab: Outer\n[ref]: https://outer.example\n\n" +
+      layout(inner) +
+      "\ntab: Sibling\n" +
+      inner +
+      "\n````\n\n[ref]: https://global.example",
+  );
+  for (const url of ["outer", "global"]) expect(html).toContain(`href="https://${url}.example"`);
+  expect((html.match(/href="https:\/\/inner.example"/g) ?? []).length).toBe(2);
+});
+
+test.each(["\n", "\r\n"])(
+  "frontmatter stays literal and retains diagnostic lines with %j",
+  async (ending) => {
+    const metadata = [
+      "---",
+      "description: |",
+      "  %% tabs %%",
+      "  %% tab: One %%",
+      "  %% tab: Two %%",
+      "  %% endtabs %%",
+      "  `unclosed code",
+      "---",
+      "",
+    ].join(ending);
+    const transformer = Tabsdown();
+    expect(transformer.textTransform?.(createCtx(), metadata)).toBe(metadata);
+    const source =
+      metadata + ["%% tabs %%", "%% tab: A %%", "%% tab: A %%", "%% endtabs %%"].join(ending);
+    const protectedSource = transformer.textTransform?.(createCtx(), source) as string;
+    expect(protectedSource.startsWith(metadata)).toBe(true);
+    // The helper has no frontmatter extension; discard metadata while preserving
+    // the lines already recorded by the document text transform.
+    const html = await render(protectedSource.slice(metadata.length));
+    expect(html).toContain('Duplicate tab label "A".');
+    expect(html).toContain("Line 11");
+  },
+);
+
+test("fenced panels starting with thematic breaks still discover marker layouts", async () => {
+  expect(
+    count(await render("```tabsdown\ntab: Outer\n---\n" + layout() + "\n---\ntab: Other\n```")),
+  ).toBe(2);
+});
+
+test.each([
+  ["$$$", "$$$"],
+  ["$$", "$$$$"],
+  ["$$$$ info", "$$$$$"],
+  ["$", "$"],
+  ["Before $start", "end$ after"],
+])("keeps math controls literal between %s and %s", async (open, close) => {
+  const literal = `${open}\n${layout()}\n${close}`;
+  expect(protectMarkers(literal)).toBe(literal);
+  expect(count(await render(`${literal}\n\n${layout()}`))).toBe(1);
+});
+
+test("even backslashes before code preserve layout discovery", async () => {
+  const source = String.raw`\\` + "`code`\n" + layout() + "\nprose ` more";
+  const html = await render(source);
+  expect(count(html)).toBe(1);
   expect(html).not.toContain("quartz-tabsdown-marker");
 });

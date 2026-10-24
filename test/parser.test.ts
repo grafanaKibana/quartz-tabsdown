@@ -790,3 +790,53 @@ describe("contained marker layouts", () => {
     expect(commentMarkers(`${prefix}%% tabs %%\n`)).toEqual([]);
   });
 });
+
+describe("Quartz literal-context regressions", () => {
+  const layout = "%% tabs %%\n%% tab: One %%\nA\n%% tab: Two %%\nB\n%% endtabs %%";
+
+  test.each([
+    ["$$$", "$$$"],
+    ["$$", "$$$$"],
+    ["$$$$ info", "$$$$$"],
+    ["$", "$"],
+    ["inline $start", "end$"],
+  ])("keeps markers literal between %s and %s, then resumes discovery", (open, close) => {
+    const source = `${open}\n${layout}\n${close}\n\n${layout}`;
+    expect(commentMarkers(source).map((marker) => marker.kind)).toEqual([
+      "tabs",
+      "tab",
+      "tab",
+      "endtabs",
+    ]);
+  });
+
+  test.each(["$unmatched\n\n", "\\$escaped\n", "$start\n$$ metadata\nx\n$$\n\n"])(
+    "unmatched or interrupted inline math does not swallow layouts after %j",
+    (prefix) => {
+      expect(commentMarkers(prefix + layout).map((marker) => marker.kind)).toEqual([
+        "tabs",
+        "tab",
+        "tab",
+        "endtabs",
+      ]);
+    },
+  );
+
+  test("even backslashes before inline code do not hide following nested markers", () => {
+    const body =
+      String.raw`\\` +
+      "`code`\n" +
+      layout.replace("\nA\n", "\ntab: Literal body line\n") +
+      "\nprose ` more\n";
+    expect(commentMarkers(body).map((marker) => marker.kind)).toEqual([
+      "tabs",
+      "tab",
+      "tab",
+      "endtabs",
+    ]);
+    expect(parseTabs(`tab: Outer\n${body}tab: Outer2`)).toMatchObject({
+      ok: true,
+      tabs: [{ label: "Outer", body }, { label: "Outer2" }],
+    });
+  });
+});

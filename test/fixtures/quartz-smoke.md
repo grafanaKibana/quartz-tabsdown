@@ -1,5 +1,10 @@
 ---
 title: Smoke
+description: |
+  %% tabs %%
+  %% tab: Metadata literal A %%
+  %% tab: Metadata literal B %%
+  %% endtabs %%
 ---
 
 ````tabsdown
@@ -14,19 +19,44 @@ A [[target|fenced wikilink]] and a ==fenced highlight==.
 
 [Fenced reference][shared]
 
+[outer-ref]: https://example.test/outer "Outer panel"
+
 ```tabsdown
 tab: Inner A
+[Inherited nested reference][outer-ref]
 tab: Inner B
 ```
 
 %% tabs %%
 %% tab: Marker in fence A %%
 Nested marker body.
+
+```tabsdown
+tab: Deep inherited A
+[Deep inherited reference][outer-ref]
+tab: Deep inherited B
+```
 %% tab: Marker in fence B %%
 %% endtabs %%
 
 tab: [Second](https://example.test) <img src=x>
 ````
+
+<!-- prettier-ignore -->
+$$$
+%% tabs %%
+%% tab: Math literal A %%
+%% tab: Math literal B %%
+%% endtabs %%
+x^2
+$$$$
+
+Before $start
+%% tabs %%
+%% tab: Inline math literal A %%
+%% tab: Inline math literal B %%
+%% endtabs %%
+end$ after
 
 %% tabs %%
 %% config: position=left, layout=multi %%

@@ -222,7 +222,13 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
         return child.type === "html" ? protectedMarker(child.value) : undefined;
       }
 
-      function transform(parent: Parent, depth = 0, source = documentSource, lineOffset = 0): void {
+      function transform(
+        parent: Parent,
+        depth = 0,
+        source = documentSource,
+        lineOffset = 0,
+        scope: readonly Definition[] = definitions,
+      ): void {
         for (let index = 0; index < parent.children.length; index += 1) {
           const child = parent.children[index]!;
           const control = marker(child);
@@ -239,7 +245,7 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
               parent.children.splice(
                 index,
                 group.length,
-                markerBlock(group, depth, source, lineOffset),
+                markerBlock(group, depth, source, lineOffset, scope),
               );
             } else {
               parent.children[index] = diagnosticNode({
@@ -259,9 +265,10 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
               child.value,
               depth,
               lineOffset + (child.position?.start.line ?? 0),
+              scope,
             );
           } else if ("children" in child) {
-            transform(child, depth, source, lineOffset);
+            transform(child, depth, source, lineOffset, scope);
           }
         }
       }
@@ -271,6 +278,7 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
         depth: number,
         source: string,
         lineOffset: number,
+        scope: readonly Definition[],
       ): RootContent {
         const inner = group.slice(1, -1);
         const lines = inner.map((child) => marker(child)?.raw ?? "content");
@@ -302,7 +310,7 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
         }
         return renderBlock(result, depth, (index) => {
           const body: MdastRoot = { type: "root", children: bodies[index] ?? [] };
-          transform(body, depth + 1, source, lineOffset);
+          transform(body, depth + 1, source, lineOffset, scope);
           return body.children;
         });
       }
@@ -338,7 +346,12 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
         }
       }
 
-      function block(source: string, depth: number, lineOffset: number): RootContent {
+      function block(
+        source: string,
+        depth: number,
+        lineOffset: number,
+        scope: readonly Definition[],
+      ): RootContent {
         const result = parseTabs(source);
         if (!result.ok) return diagnosticNode(result.diagnostic);
         // Unescaping a fenced tab body changes offsets but never line counts.
@@ -349,7 +362,7 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
           // Parse definitions before any open literal context in the body. Keep local
           // definitions authoritative and remove the inherited declarations afterwards.
           const own = collectDefinitions(processor.parse(protectMarkers(tab.body)));
-          const prefix = definitions
+          const prefix = scope
             .filter(
               (definition) => !own.some((local) => local.identifier === definition.identifier),
             )
@@ -359,7 +372,8 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
           const body = processor.parse(bodySource);
           // Resolve inside this panel before the document-wide rehype lookup can
           // let an earlier global definition shadow the panel-local definition.
-          resolveReferences(body, [...own, ...definitions]);
+          const panelScope = [...own, ...scope];
+          resolveReferences(body, panelScope);
           body.children = body.children.filter(
             (child) =>
               child.type !== "definition" ||
@@ -370,7 +384,7 @@ const remarkTabsdown = (styleClasses: readonly string[]): Plugin<[], MdastRoot> 
           if (tabOffset >= 0) bodyCursor = tabOffset + locationBody.length;
           const bodyLine = locationSource.slice(0, tabOffset).split("\n").length - 1;
           const prefixLines = prefix.split("\n").length;
-          transform(body, depth + 1, bodySource, lineOffset + bodyLine - prefixLines);
+          transform(body, depth + 1, bodySource, lineOffset + bodyLine - prefixLines, panelScope);
           return body.children;
         });
       }
@@ -421,7 +435,7 @@ export const Tabsdown: QuartzTransformerPlugin<TabsdownOptions> = (options) => {
   return {
     name: "Tabsdown",
     textTransform(_ctx, source) {
-      return protectMarkers(source);
+      return protectMarkers(source, { frontmatter: true });
     },
     markdownPlugins(): PluggableList {
       return [remarkTabsdown(styleClasses)];

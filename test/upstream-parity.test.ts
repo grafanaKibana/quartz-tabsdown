@@ -13,6 +13,7 @@ describe("upstream parity identity gate", () => {
     const patches = [
       resolve("scripts/upstream-keyed-config.patch"),
       resolve("scripts/upstream-renderer-only.patch"),
+      resolve("scripts/upstream-literal-contexts.patch"),
     ];
     const paths = [
       "src/syntax.ts",
@@ -64,6 +65,23 @@ describe("upstream parity identity gate", () => {
         cwd: directory,
       });
       expect(rendererFailed.status).not.toBe(0);
+
+      // The keyed adaptation is already applied; restore only its config file.
+      writeFileSync(config, upstreamConfig);
+      execFileSync("git", ["apply", "--include=src/config.ts", patches[0]!], { cwd: directory });
+      execFileSync("git", ["apply", "--whitespace=error", patches[1]!], { cwd: directory });
+      const syntax = join(directory, "src/syntax.ts");
+      writeFileSync(
+        syntax,
+        readFileSync(syntax, "utf8").replace(
+          "function hasClosingCodeRun(",
+          "function renamedCodeRun(",
+        ),
+      );
+      const literalsFailed = spawnSync("git", ["apply", "--whitespace=error", patches[2]!], {
+        cwd: directory,
+      });
+      expect(literalsFailed.status).not.toBe(0);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -105,6 +123,7 @@ describe("upstream parity identity gate", () => {
     }
     expect(script).toContain('"scripts/upstream-keyed-config.patch"');
     expect(script).toContain('"scripts/upstream-renderer-only.patch"');
+    expect(script).toContain('"scripts/upstream-literal-contexts.patch"');
   });
 
   test("resolves through the commits API and fetches raw files by resolved SHA", () => {

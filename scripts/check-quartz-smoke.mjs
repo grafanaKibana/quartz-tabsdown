@@ -111,6 +111,24 @@ check("marker layouts retain list and quote containers", () => {
   assert.equal(ordered.closest("li").parentElement.tagName, "OL");
   assert.match(own(ordered, ".tabsdown__panel")[0].textContent, /Ordered panel body/);
 });
+check("nested fenced references inherit the enclosing panel scope", () => {
+  for (const label of ["Inner A", "Deep inherited A"]) {
+    const block = blockWithLabel(label);
+    assert.ok(
+      own(block, ".tabsdown__panel")[0].querySelector('a[href="https://example.test/outer"]'),
+      label,
+    );
+  }
+});
+check("metadata and math stay literal before later layouts", () => {
+  assert.match(
+    document.querySelector('meta[name="description"]').getAttribute("content"),
+    /%% tab: Metadata literal A %%/,
+  );
+  const math = document.querySelectorAll(".katex-display");
+  assert.equal(math.length, 1, "one block of math instead of a marker layout");
+  assert.match(math[0].textContent, /x/);
+});
 check("literal markers survive while ordinary comments disappear", () => {
   const literal = [...document.querySelectorAll("pre code")].find((node) =>
     node.textContent.includes("%% tab: Literal A %%"),
@@ -128,7 +146,7 @@ check("literal markers survive while ordinary comments disappear", () => {
   assert.ok(!html.includes("ordinary-comment-must-disappear"));
 });
 check("all layouts render with styles and no internal transport leaks", () => {
-  assert.equal(blocks.length, 11);
+  assert.equal(blocks.length, 12);
   assert.equal(document.querySelectorAll(".tabsdown__diagnostic").length, 0);
   assert.doesNotMatch(html, /language-tabsdown/);
   const styles = [...document.querySelectorAll("style")].map((node) => node.textContent);

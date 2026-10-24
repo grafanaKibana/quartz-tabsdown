@@ -42,7 +42,7 @@ This command clones Quartz's moving `v5` branch, installs quartz-tabsdown into a
 npm run check:quartz -- 'github:grafanaKibana/quartz-tabsdown#my-branch'
 ```
 
-The fixture in `test/fixtures/quartz-smoke.md` covers fenced and marker layouts, adjacent marker lines, both mixed nesting directions, nested markers, sibling layouts in list/quote containers, ordered-list continuation indentation, configuration, icons, and formatted labels. DOM assertions in `scripts/check-quartz-smoke.mjs` check panel-scoped wikilinks, highlights, callouts, document references, and container ownership. They also guard ordinary comment removal, literal markers inside ordinary and quoted code, and the absence of raw tabsdown fences, diagnostics, or internal marker comments.
+The fixture in `test/fixtures/quartz-smoke.md` covers fenced and marker layouts, adjacent marker lines, both mixed nesting directions, nested markers, sibling layouts in list/quote containers, ordered-list continuation indentation, configuration, icons, and formatted labels. DOM assertions in `scripts/check-quartz-smoke.mjs` check panel-scoped wikilinks, highlights, callouts, document references, inherited nested references, and container ownership. Metadata and math regressions guard literal contexts and discovery of following layouts. They also guard ordinary comment removal, literal markers inside ordinary and quoted code, and the absence of raw tabsdown fences, diagnostics, or internal marker comments.
 
 The site uses Quartz's default OFM settings and plugin ordering. CI also runs the smoke test weekly to catch Quartz changes.
 
@@ -52,7 +52,7 @@ The site uses Quartz's default OFM settings and plugin ordering. CI also runs th
 npm run check:upstream -- <40-character-obsidian-pr-head-sha>
 ```
 
-`src/syntax.ts`, `src/parser.ts`, `src/config.ts`, and their tests are adapted from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown). After formatting, parity applies two explicit patches in order: `scripts/upstream-keyed-config.patch` requires keyed configuration, then `scripts/upstream-renderer-only.patch` removes Obsidian's unused `configEdit` source-edit helper, its result type, syntax import, and tests. Configuration parsing and serialization remain shared. Patch conflicts or any other file differences fail the check. The same machine-readable contract drives style validation.
+`src/syntax.ts`, `src/parser.ts`, `src/config.ts`, and their tests are adapted from [obsidian-tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown). After formatting, parity applies three explicit patches in order: `scripts/upstream-keyed-config.patch` requires keyed configuration, then `scripts/upstream-renderer-only.patch` removes Obsidian's unused `configEdit` source-edit helper, its result type, syntax import, and tests; finally, `scripts/upstream-literal-contexts.patch` corrects backslash parity and math delimiters in the shared scanner with regression tests. Configuration parsing and serialization remain shared. Patch conflicts or any other file differences fail the check. The same machine-readable contract drives style validation.
 
 The check builds the package, fetches the requested upstream commit, and reports:
 
@@ -61,4 +61,4 @@ The check builds the package, fetches the requested upstream commit, and reports
 - changed types, defaults, enum values, ranges, steps, or units;
 - numeric, color, or toggle controls without a plugin-owned CSS rule.
 
-Push and pull-request CI pin the exact 40-character Obsidian implementation SHA in `.github/workflows/ci.yml`. Update that pin, the shared syntax/parser/config files and tests, parity scope, and both adaptation patches together; keep each patch limited to its documented purpose. Running `npm run check:upstream` without one resolves `main` for the weekly drift check.
+Push and pull-request CI pin the exact 40-character Obsidian implementation SHA in `.github/workflows/ci.yml`. Update that pin, the shared syntax/parser/config files and tests, parity scope, and all adaptation patches together; keep each patch limited to its documented purpose. Running `npm run check:upstream` without one resolves `main` for the weekly drift check.

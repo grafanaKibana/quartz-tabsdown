@@ -17,7 +17,11 @@ const VENDORED = [
   ["tests/parser.test.ts", "test/parser.test.ts"],
 ];
 
-const PATCHES = ["scripts/upstream-keyed-config.patch", "scripts/upstream-renderer-only.patch"];
+const PATCHES = [
+  "scripts/upstream-keyed-config.patch",
+  "scripts/upstream-renderer-only.patch",
+  "scripts/upstream-literal-contexts.patch",
+];
 
 const problems = [];
 const args = process.argv.slice(2);
@@ -85,7 +89,7 @@ async function checkVendoredFiles() {
       await writeFile(target, upstream);
     }
 
-    // Require key=value, then omit Obsidian's source-edit helper and its tests.
+    // Require key=value, omit editor helpers, then apply literal-context fixes.
     // Patch conflicts fail the check; all remaining source still compares exactly.
     for (const patch of PATCHES) {
       execFileSync("git", ["apply", "--whitespace=error", resolve(patch)], {
@@ -189,6 +193,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `In sync with ${REPOSITORY}@${resolvedSha}: ${VENDORED.length} files match after the keyed-only and renderer-only patches and ` +
+  `In sync with ${REPOSITORY}@${resolvedSha}: ${VENDORED.length} files match after the keyed-only, renderer-only, and literal-context patches and ` +
     `${controls} Style Settings controls mapped with defaults, types, enums, ranges, steps, and units.`,
 );

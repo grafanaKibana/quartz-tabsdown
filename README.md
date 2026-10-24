@@ -98,7 +98,7 @@ Nested blocks default to the secondary palette, matching Obsidian. An explicit b
 
 ### Literal content and diagnostics
 
-Marker-like text inside code spans, code fences, indented code, raw HTML, and math does not open a layout. Controls inside ordinary Obsidian comments also do not open layouts; those comments follow Quartz's normal comment-removal behavior. Structural controls occupy their own lines; inline prose containing `%% tabs %%` does not open a layout.
+Marker-like text inside frontmatter, code spans, code fences, indented code, raw HTML, and math does not open a layout. Controls inside ordinary Obsidian comments also do not open layouts; those comments follow Quartz's normal comment-removal behavior. Structural controls occupy their own lines; inline prose containing `%% tabs %%` does not open a layout.
 
 Missing closing markers, invalid configuration, empty or duplicate labels, fewer than two tabs, and content before the first tab produce a diagnostic with the original source and location. Keep configuration before the first tab; later configuration lines belong to that tab's content.
 
