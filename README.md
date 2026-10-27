@@ -134,4 +134,3 @@ See [development and verification](docs/development.md).
 ## License
 
 [MIT](LICENSE)
-
