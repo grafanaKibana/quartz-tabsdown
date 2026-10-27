@@ -2,6 +2,12 @@
 
 quartz-tabsdown renders [Tabsdown](https://github.com/grafanaKibana/obsidian-tabsdown) Markdown as theme-native tabs in [Quartz](https://quartz.jzhao.xyz/). The same marker layouts and fenced blocks work in Obsidian and on the published site.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/product-captures/hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/product-captures/hero.png">
+  <img src="docs/assets/product-captures/hero.png" alt="Product overview">
+</picture>
+
 <p align="center">
 <a href="https://github.com/grafanaKibana/quartz-tabsdown/blob/main/docs/configuration.md"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Quartz-%E2%89%A55.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;logo=ri%3ALuGem&amp;color=a079ff&amp;logoColor=a079ff&amp;valueColor=fafafa&amp;labelTextColor=fafafa"><img alt="Quartz 5 or later" src="https://shieldcn.dev/badge/Quartz-%E2%89%A55.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;logo=ri%3ALuGem&amp;color=7c3aed&amp;logoColor=7c3aed&amp;valueColor=18181b&amp;labelTextColor=18181b"></picture></a>
 <a href="https://github.com/grafanaKibana/quartz-tabsdown/releases/latest"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/release/grafanaKibana/quartz-tabsdown/stable.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;label=Version"><img alt="Latest version" src="https://shieldcn.dev/github/release/grafanaKibana/quartz-tabsdown/stable.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;label=Version"></picture></a>
@@ -134,3 +140,5 @@ See [development and verification](docs/development.md).
 ## License
 
 [MIT](LICENSE)
+
+[Regenerate product images](docs/product-captures.md)

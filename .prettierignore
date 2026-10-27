@@ -1,1 +1,7 @@
 dist
+
+# Standalone capture tool is checked by product-captures-check.yml.
+/.github/actions/product-captures/**
+/.product-captures-cache/**
+/docs/assets/product-captures/gallery.html
+/docs/assets/product-captures/manifest.json
