@@ -23,31 +23,31 @@ on:
       only:
         description: Comma-separated output IDs; empty renders all.
         type: string
-        default: ''
+        default: ""
       template:
         description: Optional editorial, feature, or showcase override.
         type: string
-        default: ''
+        default: ""
       theme:
         description: Optional light or dark override.
         type: string
-        default: ''
+        default: ""
       width:
         description: Optional output width.
         type: string
-        default: ''
+        default: ""
       height:
         description: Optional output height.
         type: string
-        default: ''
+        default: ""
       scale:
         description: Optional pixel density from 1 to 3.
         type: string
-        default: ''
+        default: ""
       output_dir:
         description: Optional output directory relative to the config.
         type: string
-        default: ''
+        default: ""
       skip_prepare:
         description: Reuse an explicitly prepared product.
         type: boolean
@@ -55,11 +55,11 @@ on:
       base_url:
         description: Optional running preview origin; skips the configured product build.
         type: string
-        default: ''
+        default: ""
       release_tag:
         description: Optional existing release to capture and attach artwork to.
         type: string
-        default: ''
+        default: ""
       update_pr:
         description: Open a review-only image update PR; never merges.
         type: boolean

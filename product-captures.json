@@ -58,155 +58,107 @@
     {
       "id": "hero",
       "template": "showcase",
-      "captures": [
-        "overview-light"
-      ],
+      "captures": ["overview-light"],
       "width": 1600,
       "height": 900,
       "layout": "column",
       "theme": "light",
       "capturesByTheme": {
-        "light": [
-          "overview-light"
-        ],
-        "dark": [
-          "overview-dark"
-        ]
+        "light": ["overview-light"],
+        "dark": ["overview-dark"]
       }
     },
     {
       "id": "hero-dark",
       "template": "showcase",
-      "captures": [
-        "overview-dark"
-      ],
+      "captures": ["overview-dark"],
       "width": 1600,
       "height": 900,
       "layout": "column",
       "theme": "dark",
       "capturesByTheme": {
-        "light": [
-          "overview-light"
-        ],
-        "dark": [
-          "overview-dark"
-        ]
+        "light": ["overview-light"],
+        "dark": ["overview-dark"]
       }
     },
     {
       "id": "themes",
       "template": "showcase",
-      "captures": [
-        "overview-light"
-      ],
+      "captures": ["overview-light"],
       "width": 1600,
       "height": 1000,
       "layout": "column",
       "theme": "light",
       "capturesByTheme": {
-        "light": [
-          "overview-light"
-        ],
-        "dark": [
-          "overview-dark"
-        ]
+        "light": ["overview-light"],
+        "dark": ["overview-dark"]
       }
     },
     {
       "id": "themes-dark",
       "template": "showcase",
-      "captures": [
-        "overview-dark"
-      ],
+      "captures": ["overview-dark"],
       "width": 1600,
       "height": 1000,
       "layout": "column",
       "theme": "dark",
       "capturesByTheme": {
-        "light": [
-          "overview-light"
-        ],
-        "dark": [
-          "overview-dark"
-        ]
+        "light": ["overview-light"],
+        "dark": ["overview-dark"]
       }
     },
     {
       "id": "social",
       "template": "showcase",
-      "captures": [
-        "overview-light"
-      ],
+      "captures": ["overview-light"],
       "width": 1200,
       "height": 630,
       "layout": "horizontal",
       "theme": "light",
       "capturesByTheme": {
-        "light": [
-          "overview-light"
-        ],
-        "dark": [
-          "overview-dark"
-        ]
+        "light": ["overview-light"],
+        "dark": ["overview-dark"]
       }
     },
     {
       "id": "social-dark",
       "template": "showcase",
-      "captures": [
-        "overview-dark"
-      ],
+      "captures": ["overview-dark"],
       "width": 1200,
       "height": 630,
       "layout": "horizontal",
       "theme": "dark",
       "capturesByTheme": {
-        "light": [
-          "overview-light"
-        ],
-        "dark": [
-          "overview-dark"
-        ]
+        "light": ["overview-light"],
+        "dark": ["overview-dark"]
       }
     },
     {
       "id": "horizontal",
       "template": "showcase",
       "layout": "horizontal",
-      "captures": [
-        "overview-light"
-      ],
+      "captures": ["overview-light"],
       "width": 1600,
       "height": 900,
       "frameHeight": 0.6153086419753087,
       "theme": "light",
       "capturesByTheme": {
-        "light": [
-          "overview-light"
-        ],
-        "dark": [
-          "overview-dark"
-        ]
+        "light": ["overview-light"],
+        "dark": ["overview-dark"]
       }
     },
     {
       "id": "horizontal-dark",
       "template": "showcase",
       "layout": "horizontal",
-      "captures": [
-        "overview-dark"
-      ],
+      "captures": ["overview-dark"],
       "width": 1600,
       "height": 900,
       "frameHeight": 0.6153086419753087,
       "theme": "dark",
       "capturesByTheme": {
-        "light": [
-          "overview-light"
-        ],
-        "dark": [
-          "overview-dark"
-        ]
+        "light": ["overview-light"],
+        "dark": ["overview-dark"]
       }
     }
   ],
@@ -237,10 +189,7 @@
         "tsup.config.ts",
         "LICENSE"
       ],
-      "buildArgs": [
-        "run",
-        "build"
-      ],
+      "buildArgs": ["run", "build"],
       "order": 10,
       "options": {
         "styles": {
@@ -271,12 +220,8 @@
     },
     "assertions": {
       "file": "public/index.html",
-      "includes": [
-        "tabsdown__tab"
-      ],
-      "excludes": [
-        "tabsdown__diagnostic"
-      ]
+      "includes": ["tabsdown__tab"],
+      "excludes": ["tabsdown__diagnostic"]
     },
     "route": "/",
     "readySelector": ".tabsdown .tabsdown__tab"
