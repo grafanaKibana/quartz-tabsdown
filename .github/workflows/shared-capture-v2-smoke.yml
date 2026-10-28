@@ -1,0 +1,13 @@
+name: Shared capture v2 smoke
+on:
+  push:
+    branches: [maintenance/product-captures]
+    paths: [.github/workflows/shared-capture-v2-smoke.yml, .github/capture-smoke/**]
+permissions:
+  contents: read
+jobs:
+  capture:
+    uses: grafanaKibana/product-captures/.github/workflows/capture.yml@96a4ac79ba437c7f621249ad87f0bfa6dbaffdf7
+    with:
+      config: .github/capture-smoke/product-captures.json
+      dry-run: false

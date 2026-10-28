@@ -1,0 +1,7 @@
+{
+  "name": "Capture fixture",
+  "output": "output",
+  "appearance": { "width": 800, "height": 600 },
+  "capture": { "viewport": { "width": 800, "height": 500 }, "ready": "main" },
+  "server": { "directory": ".", "port": 43171 }
+}
