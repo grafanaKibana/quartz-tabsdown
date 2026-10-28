@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "project": {"id": "generic-smoke", "title": "Capture smoke fixture", "subtitle": "A reproducible local browser scene"},
+  "outputDir": "output",
+  "server": {"url": "http://127.0.0.1:43171", "command": "node \"$PRODUCT_CAPTURE_TOOL_ROOT/serve.mjs\" --dir . --port 43171"},
+  "captures": [{"id": "scene", "provider": "web", "url": "/", "viewport": {"width": 800, "height": 500}, "ready": {"selector": "main"}}],
+  "outputs": [
+    {"id": "smoke-light", "template": "editorial", "theme": "light", "captures": ["scene"], "width": 800, "height": 500},
+    {"id": "smoke-dark", "template": "editorial", "theme": "dark", "captures": ["scene"], "width": 800, "height": 500}
+  ]
+}
