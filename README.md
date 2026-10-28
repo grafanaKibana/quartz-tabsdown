@@ -141,4 +141,4 @@ See [development and verification](docs/development.md).
 
 [MIT](LICENSE)
 
-[Regenerate product images](docs/product-captures.md)
+[Regenerate product images](https://github.com/grafanaKibana/product-captures#configuration)

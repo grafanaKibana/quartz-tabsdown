@@ -196,7 +196,7 @@ jobs:
 
       - name: Generate release product artwork
         if: steps.publication.outputs.created == 'true'
-        uses: grafanaKibana/product-captures/actions/capture@v1
+        uses: grafanaKibana/product-captures/actions/capture@v2
         with:
           dry-run: "false"
           release-tag: ${{ steps.publication.outputs.tag }}
