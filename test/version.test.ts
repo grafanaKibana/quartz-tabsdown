@@ -85,5 +85,5 @@ test("validates titles and releases main only after CI passes", () => {
   expect(workflow).toContain("Version metadata is updated automatically after merge.");
   expect(workflow).toContain("needs: [version, upstream-parity, quartz-smoke, check]");
   expect(workflow).toContain('git push --atomic origin HEAD:main "refs/tags/$version"');
-  expect(workflow).toContain('gh release create "$version" --verify-tag');
+  expect(workflow).toContain('gh release create "$version" --title "$version" --verify-tag');
 });

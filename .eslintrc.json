@@ -12,7 +12,12 @@
   },
   "plugins": ["@typescript-eslint"],
   "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
-  "ignorePatterns": ["dist", "node_modules"],
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    ".github/actions/product-captures/**",
+    ".product-captures-cache/**"
+  ],
   "rules": {
     "@typescript-eslint/no-unused-vars": [
       "error",

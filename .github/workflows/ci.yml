@@ -155,7 +155,7 @@ jobs:
           fi
 
           if git ls-remote --exit-code --tags origin "refs/tags/$version" >/dev/null 2>&1; then
-            gh release create "$version" --verify-tag --generate-notes --latest
+            gh release create "$version" --title "$version" --verify-tag --generate-notes --latest
             exit 0
           fi
 
@@ -173,4 +173,4 @@ jobs:
           else
             git push origin "refs/tags/$version"
           fi
-          gh release create "$version" --verify-tag --generate-notes --latest
+          gh release create "$version" --title "$version" --verify-tag --generate-notes --latest

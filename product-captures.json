@@ -1,0 +1,19 @@
+{
+  "name": "Tabsdown",
+  "capture": {
+    "ready": ".tabsdown .tabsdown__tab",
+    "storage": {
+      "theme": "$theme"
+    }
+  },
+  "quartz": {
+    "title": "Fieldnotes",
+    "options": {
+      "styles": {
+        "personality": "underline",
+        "alignment": "equal-width",
+        "radius": 8
+      }
+    }
+  }
+}
