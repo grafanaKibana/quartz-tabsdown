@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/product-captures/hero-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/assets/product-captures/hero.png">
-  <img src="docs/assets/product-captures/hero.png" alt="Product overview">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/grafanaKibana/quartz-tabsdown/HEAD/docs/assets/product-captures/hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/grafanaKibana/quartz-tabsdown/HEAD/docs/assets/product-captures/hero.png">
+  <img src="https://raw.githubusercontent.com/grafanaKibana/quartz-tabsdown/HEAD/docs/assets/product-captures/hero.png" alt="Product overview">
 </picture>
 
 <p align="center">
@@ -9,9 +9,9 @@ quartz-tabsdown renders <a href="https://github.com/grafanaKibana/obsidian-tabsd
 </p>
 
 <p align="center">
-<a href="https://github.com/grafanaKibana/quartz-tabsdown/blob/main/docs/configuration.md"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Quartz-%E2%89%A55.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;logo=ri%3ALuGem&amp;color=a079ff&amp;logoColor=a079ff&amp;valueColor=fafafa&amp;labelTextColor=fafafa"><img alt="Quartz 5 or later" src="https://shieldcn.dev/badge/Quartz-%E2%89%A55.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;logo=ri%3ALuGem&amp;color=7c3aed&amp;logoColor=7c3aed&amp;valueColor=18181b&amp;labelTextColor=18181b"></picture></a>
-<a href="https://github.com/grafanaKibana/quartz-tabsdown/releases/latest"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/release/grafanaKibana/quartz-tabsdown/stable.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;label=Version"><img alt="Latest version" src="https://shieldcn.dev/github/release/grafanaKibana/quartz-tabsdown/stable.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;label=Version"></picture></a>
-<a href="https://github.com/grafanaKibana/quartz-tabsdown/actions/workflows/ci.yml"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/ci/grafanaKibana/quartz-tabsdown.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;label=CI&amp;workflow=ci.yml&amp;branch=main&amp;statusDot=true"><img alt="CI status" src="https://shieldcn.dev/github/ci/grafanaKibana/quartz-tabsdown.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;label=CI&amp;workflow=ci.yml&amp;branch=main&amp;statusDot=true"></picture></a>
+<a href="https://github.com/grafanaKibana/quartz-tabsdown/blob/main/docs/configuration.md"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Quartz-%E2%89%A55.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;logo=ri%3ALuGem&amp;color=a079ff&amp;logoColor=a079ff&amp;valueColor=fafafa&amp;labelTextColor=fafafa&amp;gradient=18181b%2C18181b%2C90"><img alt="Quartz 5 or later" src="https://shieldcn.dev/badge/Quartz-%E2%89%A55.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;logo=ri%3ALuGem&amp;color=7c3aed&amp;logoColor=7c3aed&amp;valueColor=18181b&amp;labelTextColor=18181b&amp;gradient=fafafa%2Cfafafa%2C90"></picture></a>
+<a href="https://github.com/grafanaKibana/quartz-tabsdown/releases/latest"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/release/grafanaKibana/quartz-tabsdown/stable.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;label=Version&amp;gradient=18181b%2C18181b%2C90&amp;labelTextColor=fafafa"><img alt="Latest version" src="https://shieldcn.dev/github/release/grafanaKibana/quartz-tabsdown/stable.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;label=Version&amp;gradient=fafafa%2Cfafafa%2C90&amp;labelTextColor=18181b"></picture></a>
+<a href="https://github.com/grafanaKibana/quartz-tabsdown/actions/workflows/ci.yml"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/ci/grafanaKibana/quartz-tabsdown.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;label=CI&amp;workflow=ci.yml&amp;branch=main&amp;statusDot=true&amp;gradient=18181b%2C18181b%2C90&amp;labelTextColor=fafafa"><img alt="CI status" src="https://shieldcn.dev/github/ci/grafanaKibana/quartz-tabsdown.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;label=CI&amp;workflow=ci.yml&amp;branch=main&amp;statusDot=true&amp;gradient=fafafa%2Cfafafa%2C90&amp;labelTextColor=18181b"></picture></a>
 </p>
 
 ## What it does
