@@ -14,21 +14,24 @@ quartz-tabsdown renders <a href="https://github.com/grafanaKibana/obsidian-tabsd
 <a href="https://github.com/grafanaKibana/quartz-tabsdown/actions/workflows/ci.yml"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/ci/grafanaKibana/quartz-tabsdown.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=dark&amp;label=CI&amp;workflow=ci.yml&amp;branch=main&amp;statusDot=true&amp;gradient=18181b%2C18181b%2C90&amp;labelTextColor=fafafa"><img alt="CI status" src="https://shieldcn.dev/github/ci/grafanaKibana/quartz-tabsdown.svg?variant=outline&amp;size=sm&amp;font=geist&amp;mode=light&amp;label=CI&amp;workflow=ci.yml&amp;branch=main&amp;statusDot=true&amp;gradient=fafafa%2Cfafafa%2C90&amp;labelTextColor=18181b" style="display:inline-block;margin:0;vertical-align:middle"></picture></a>
 </p>
 
-## What it does
+Publish the same Tabsdown layouts used in Obsidian as tabs in Quartz. Comment markers keep panel bodies as ordinary Markdown; fenced `tabsdown` blocks contain panel definitions and Markdown bodies.
 
-- Renders Markdown, links, embeds, callouts, math, and syntax highlighting inside tabs.
-- Supports nested tabs, formatted labels, Lucide icons, and tab lists on any side.
-- Matches Quartz light and dark themes, with theme-following or custom tab corner radii.
-- Keeps every panel readable when JavaScript is unavailable.
-- Exposes an optional browser API for custom Quartz components.
+- Render links, embeds, callouts, math, and syntax-highlighted code inside panels.
+- Mix and nest marker and fenced layouts, each with its own active tab and configuration.
+- Use formatted labels, bundled Lucide icons, and tab lists at the top, bottom, left, or right.
+- Follow Quartz light and dark themes, with global appearance settings and local block overrides.
 
-## Install
+## Get started
+
+Use Quartz 5 or later with Node 22+ and npm 10.9.2+. Run the installer from your Quartz site:
 
 ```bash
 npx quartz plugin add github:grafanaKibana/quartz-tabsdown
 ```
 
-Enable the plugin in `quartz.config.yaml`:
+## Configuration
+
+Check the entry in `quartz.config.yaml`:
 
 ```yaml
 plugins:
@@ -36,107 +39,48 @@ plugins:
     enabled: true
 ```
 
-See [plugin configuration](docs/configuration.md) for `quartz.ts`, transformer order, and validation behavior.
+The [configuration guide](docs/configuration.md) also covers direct registration in `quartz.ts`. Keep the default transformer order: Tabsdown must run before Obsidian Flavored Markdown so marker controls survive comment processing and panel content receives the later Markdown transforms.
 
-## Syntax
+## Add your first layout
 
-Use comment markers for tabs whose bodies remain ordinary Markdown:
+Put this in a content note and build the site:
 
 ```markdown
 %% tabs %%
-%% config: position=left, layout=multi %%
+%% config: position=top, layout=multi %%
 
-%% tab: icon:book **First** %%
+%% tab: icon:book **Overview** %%
 
-Normal Markdown content.
+Explain the idea with ordinary Markdown.
 
-%% tab: Second %%
+%% tab: icon:code Example %%
 
-More content.
+Add an example, link, or callout here.
 
 %% endtabs %%
 ```
 
-Marker lines can be adjacent without blank lines. They also work inside lists and blockquotes, using the normal Markdown container prefixes. A layout needs at least two non-empty, unique labels, and optional configuration belongs before the first tab.
+Use at least two non-empty, unique labels. Configuration belongs before the first tab and always uses `key=value`; repeated keys are errors. `position=top|bottom|left|right` places the list, while `layout=one` scrolls labels on one line and `layout=multi` lets them wrap.
 
-Existing fenced syntax remains supported. Inside a `tabsdown` fence, start each tab with a column-zero `tab: <label>` line and add optional column-zero `config: <values>` lines before the first tab:
+Labels accept bold, italic, strikethrough, and inline code. A leading `icon:<name>` selects a bundled Lucide icon; unknown names render without an icon. Other label constructs, including links and HTML, remain literal text.
 
-`````markdown
-````tabsdown
-config: position=top, layout=multi
+## Source formats
 
-tab: **Python**
+For a fenced layout, use a `tabsdown` fence with column-zero `tab: <label>` lines. If a panel contains code fences, make the outer fence longer than any matching inner fence. Marker layouts also work inside Markdown lists and blockquotes using their normal container prefixes.
 
-```python
-print("Hello Tabsdown")
-```
+Both formats support nesting, including a marker layout inside a fenced panel or the reverse. Each marker layout needs its own matching `%% endtabs %%`. Nested blocks default to the secondary palette; an explicit block palette overrides that default.
 
-tab: `JavaScript`
+### Without JavaScript
 
-```javascript
-console.log("Hello Tabsdown");
-```
-````
-`````
+Quartz emits every panel with its label in source order. JavaScript adds tab behavior and hides inactive panels only after it loads. Without JavaScript, all content stays readable.
 
-`position=top|left|right|bottom` places the tab list. `layout=one` keeps labels on one scrollable line, while `layout=multi` lets them wrap.
-
-Blocks can also override appearance with `density=default|compact`, `personality=button|underline|separator|rail`, `palette=primary|secondary`, and `alignment=start|center|equal-width`. These settings override site-wide and position-specific styles for that block; nested and sibling blocks keep their own settings.
-
-Every configuration value must use `key=value` syntax. Bare values such as `config: top, multi` are rejected; use `config: position=top, layout=multi` instead. Repeating a key, including across multiple config lines, is an error.
-
-For fenced layouts, use matching backtick or tilde fences. The outer fence must be longer than any matching fence inside it. Empty tab bodies are valid.
-
-### Labels and icons
-
-Labels support `**bold**`, `*italic*`, `~~strikethrough~~`, and backtick inline code. Links, wikilinks, images, raw HTML, nested formatting, and malformed delimiters remain literal text.
-
-Start a label with `icon:<name>` to use a bundled [Lucide](https://lucide.dev/icons/) icon:
-
-````markdown
-```tabsdown
-tab: icon:code Python
-tab: icon:file-text Notes
-```
-````
-
-An unknown icon name renders no icon. Escape a literal icon prefix as `tab: \icon:name` (or `%% tab: \icon:name %%`) and a literal fenced tab line as `\tab:`.
-
-### Nested tabs
-
-A tab body can contain marker layouts, fenced layouts, or a mixture of both. Nested marker layouts need their own matching `%% endtabs %%`. When nesting fences, make the inner fence shorter than the outer fence. Each level keeps its own active tab and configuration.
-
-Nested blocks default to the secondary palette, matching Obsidian. An explicit block `palette=` setting overrides that default.
-
-### Literal content and diagnostics
-
-Marker-like text inside frontmatter, code spans, code fences, indented code, raw HTML, and math does not open a layout. Controls inside ordinary Obsidian comments also do not open layouts; those comments follow Quartz's normal comment-removal behavior. Structural controls occupy their own lines; inline prose containing `%% tabs %%` does not open a layout.
-
-Missing closing markers, invalid configuration, empty or duplicate labels, fewer than two tabs, and content before the first tab produce a diagnostic with the original source and location. Keep configuration before the first tab; later configuration lines belong to that tab's content.
-
-## Without JavaScript
-
-Quartz emits every panel in source order with its label. The client script adds tab behavior and hides inactive panels only after it loads, so the content stays readable when JavaScript is disabled or fails.
+Missing closing markers, invalid settings, or invalid labels produce diagnostics with the original source and location. If wikilinks or callouts render incorrectly, first check transformer order in the configuration guide.
 
 ## Guides
 
-- [Configure the Quartz plugin](docs/configuration.md)
-- [Customize appearance](docs/style-options.md)
-- [Mount panels from a custom Quartz component](docs/mounting-panels.md)
-- [Develop and verify quartz-tabsdown](docs/development.md)
+- [Plugin configuration](docs/configuration.md) — YAML, direct `quartz.ts` registration, and transformer order.
+- [Appearance](docs/style-options.md) — global styles, position overrides, and theme behavior.
+- [Custom component panels](docs/mounting-panels.md) — the optional browser API.
+- [Development and verification](docs/development.md) — checks, Quartz smoke testing, and Obsidian parity.
 
-## Troubleshooting
-
-- **A wikilink or callout renders incorrectly:** Keep Tabsdown before Obsidian Flavored Markdown. The default order is already correct.
-- **A block shows a diagnostic:** Check matching marker delimiters (or column-zero `tab:` lines inside fences), unique labels, and at least two tabs.
-- **An inner fence closes Tabsdown:** Make the outer fence longer than every matching fence inside it, or use tildes.
-- **The build rejects style options:** The error includes the invalid configuration path. Compare it with the [style schema](docs/style-options.md).
-- **Still stuck:** [Open an issue](https://github.com/grafanaKibana/quartz-tabsdown/issues) with the block, configuration, and Quartz version.
-
-## Development
-
-See [development and verification](docs/development.md).
-
-## License
-
-[MIT](LICENSE)
+[Report an issue](https://github.com/grafanaKibana/quartz-tabsdown/issues) | [Contributing](docs/development.md) | [License](LICENSE)
