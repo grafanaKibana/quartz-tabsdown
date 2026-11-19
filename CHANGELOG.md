@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fade the edge of a scrolling tab list while that edge still hides tabs, on the inline axis for top and bottom lists and the block axis for side lists.
 - Add theme-following and custom tab radii while treating existing numeric-only radius configurations as Custom. Button and Rail use matching outer and inner geometry; Underline and Separator remain square.
 - Pin parity checks to the Obsidian 1.5.0 release PR commit `20b3da41426a90950a4719274a1117d0059a6f1a`.
 
